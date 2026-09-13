@@ -1,16 +1,8 @@
 // =======================================================
-// SPORTHUB DATABASE - 4 MEMBERS VERSION
-// ASP.NET Core Web API + React + EF Core + LINQ + MySQL
-// Tổng cộng: 24 bảng
-// =======================================================
-
-
-// =======================================================
 // 1. USERS
 // =======================================================
-
 Table users {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
   username varchar(100) [not null, unique]
   email varchar(150) [not null, unique]
@@ -20,32 +12,36 @@ Table users {
 
   created_at datetime [not null]
   updated_at datetime
+
+  indexes {
+    username
+    email
+    status
+  }
 }
 
 
 // =======================================================
 // 2. ROLES
 // =======================================================
-
 Table roles {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
   name varchar(50) [not null, unique]
   description varchar(255)
 
-  created_at datetime
+  created_at datetime [not null]
 }
 
 
 // =======================================================
 // 3. PERMISSIONS
-// Quyền chi tiết dùng cho Policy-Based Authorization
+// Quyền chi tiết để demo @PreAuthorize / hasAuthority
 // =======================================================
-
 Table permissions {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  name varchar(100) [not null, unique]
+  code varchar(100) [not null, unique]
   description varchar(255)
 
   created_at datetime [not null]
@@ -54,38 +50,33 @@ Table permissions {
 
 // =======================================================
 // 4. USER_ROLES
+// Composite key phù hợp @EmbeddedId
 // =======================================================
-
 Table user_roles {
-  id int [pk, increment]
+  user_id bigint [not null]
+  role_id bigint [not null]
 
-  user_id int [not null]
-  role_id int [not null]
-
-  created_at datetime
+  created_at datetime [not null]
 
   indexes {
-    (user_id, role_id) [unique]
+    (user_id, role_id) [pk]
+    role_id
   }
 }
 
 
 // =======================================================
 // 5. ROLE_PERMISSIONS
-// Quan hệ nhiều-nhiều giữa roles và permissions
+// Composite key phù hợp @EmbeddedId
 // =======================================================
-
 Table role_permissions {
-  id int [pk, increment]
-
-  role_id int [not null]
-  permission_id int [not null]
+  role_id bigint [not null]
+  permission_id bigint [not null]
 
   created_at datetime [not null]
 
   indexes {
-    (role_id, permission_id) [unique]
-    role_id
+    (role_id, permission_id) [pk]
     permission_id
   }
 }
@@ -94,11 +85,10 @@ Table role_permissions {
 // =======================================================
 // 6. USER_PROFILES
 // =======================================================
-
 Table user_profiles {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  user_id int [not null, unique]
+  user_id bigint [not null, unique]
 
   full_name varchar(150)
   phone varchar(20)
@@ -106,11 +96,10 @@ Table user_profiles {
   date_of_birth date
 
   avatar_url varchar(500)
-
   address varchar(255)
   city varchar(100)
 
-  created_at datetime
+  created_at datetime [not null]
   updated_at datetime
 }
 
@@ -118,39 +107,39 @@ Table user_profiles {
 // =======================================================
 // 7. SPORTS
 // =======================================================
-
 Table sports {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
   name varchar(100) [not null, unique]
-  description text
+  description varchar(500)
   icon_url varchar(500)
 
-  status varchar(30) [default: 'ACTIVE']
+  status varchar(30) [not null, default: 'ACTIVE']
 
-  created_at datetime
+  created_at datetime [not null]
   updated_at datetime
+
+  indexes {
+    name
+    status
+  }
 }
 
 
 // =======================================================
 // 8. VENUES
-// Cơ sở thể thao
+// Cơ sở thể thao do OWNER quản lý
 // =======================================================
-
 Table venues {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  owner_id int [not null]
+  owner_id bigint [not null]
 
   name varchar(200) [not null]
-  description text
-
-  // Bản 4 người gộp venue_images vào đây
+  description varchar(1000)
   image_url varchar(500)
 
   address varchar(255) [not null]
-  ward varchar(100)
   district varchar(100)
   city varchar(100)
 
@@ -159,67 +148,68 @@ Table venues {
 
   phone varchar(20)
 
-  open_time time
-  close_time time
+  status varchar(30) [not null, default: 'ACTIVE']
 
-  status varchar(30) [default: 'ACTIVE']
-
-  created_at datetime
+  created_at datetime [not null]
   updated_at datetime
+
+  indexes {
+    owner_id
+    status
+    (city, district)
+  }
 }
 
 
 // =======================================================
 // 9. COURTS
-// Sân cụ thể
+// Gộp giá cơ bản vào court để bỏ court_prices/time_slots
 // =======================================================
-
 Table courts {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  venue_id int [not null]
-  sport_id int [not null]
+  venue_id bigint [not null]
+  sport_id bigint [not null]
 
   name varchar(150) [not null]
-  description text
-
-  // Bản 4 người gộp court_images vào đây
+  description varchar(1000)
   image_url varchar(500)
 
   court_type varchar(100)
   capacity int
 
-  status varchar(30) [default: 'AVAILABLE']
+  price_per_hour decimal(12,2) [not null]
 
-  created_at datetime
+  status varchar(30) [not null, default: 'AVAILABLE']
+
+  created_at datetime [not null]
   updated_at datetime
 
   indexes {
     venue_id
     sport_id
+    status
+    (venue_id, sport_id, status)
   }
 }
 
 
 // =======================================================
 // 10. COURT_SCHEDULES
-// Lịch hoạt động của sân
-// day_of_week: 1 -> 7
+// Lịch mở cửa theo thứ trong tuần
 // =======================================================
-
 Table court_schedules {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  court_id int [not null]
+  court_id bigint [not null]
 
   day_of_week int [not null]
-
   open_time time [not null]
   close_time time [not null]
 
-  is_active boolean [default: true]
+  is_active boolean [not null, default: true]
 
-  created_at datetime
+  created_at datetime [not null]
   updated_at datetime
 
   indexes {
@@ -229,74 +219,26 @@ Table court_schedules {
 
 
 // =======================================================
-// 11. TIME_SLOTS
+// 11. BOOKINGS
+// Gộp booking_details + time_slots:
+// mỗi booking MVP đặt 1 court trong 1 khoảng thời gian
 // =======================================================
-
-Table time_slots {
-  id int [pk, increment]
-
-  start_time time [not null]
-  end_time time [not null]
-
-  status varchar(30) [default: 'ACTIVE']
-
-  indexes {
-    (start_time, end_time) [unique]
-  }
-}
-
-
-// =======================================================
-// 12. COURT_PRICES
-// Giá theo sân + khung giờ
-// =======================================================
-
-Table court_prices {
-  id int [pk, increment]
-
-  court_id int [not null]
-  time_slot_id int [not null]
-
-  day_of_week int
-
-  price decimal(12,2) [not null]
-
-  effective_from date
-  effective_to date
-
-  status varchar(30) [default: 'ACTIVE']
-
-  created_at datetime
-  updated_at datetime
-
-  indexes {
-    court_id
-    time_slot_id
-  }
-}
-
-
-// =======================================================
-// 13. BOOKINGS
-// Phiếu đặt sân
-// =======================================================
-
 Table bookings {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  user_id int [not null]
-  voucher_id int
+  user_id bigint [not null]
+  court_id bigint [not null]
 
   booking_code varchar(50) [not null, unique]
 
   booking_date date [not null]
+  start_time time [not null]
+  end_time time [not null]
 
-  subtotal decimal(12,2) [not null]
-  discount_amount decimal(12,2) [default: 0]
+  unit_price decimal(12,2) [not null]
   total_amount decimal(12,2) [not null]
 
   status varchar(30) [not null, default: 'PENDING']
-
   note varchar(500)
 
   created_at datetime [not null]
@@ -304,216 +246,128 @@ Table bookings {
 
   indexes {
     user_id
+    court_id
     booking_date
     status
+
+    // Dùng query Service kiểm tra overlap thời gian.
+    (court_id, booking_date, start_time, end_time)
   }
 }
 
 
 // =======================================================
-// 14. BOOKING_DETAILS
-// Một booking có thể chứa nhiều time slot
+// 12. PAYMENTS
+// Payment mock - 1 payment chính cho 1 booking
 // =======================================================
-
-Table booking_details {
-  id int [pk, increment]
-
-  booking_id int [not null]
-
-  court_id int [not null]
-  time_slot_id int [not null]
-
-  booking_date date [not null]
-
-  unit_price decimal(12,2) [not null]
-
-  created_at datetime
-
-  // Không đặt UNIQUE vì booking Cancelled có thể cần cho đặt lại.
-  // Conflict sẽ được Service kiểm tra bằng LINQ.
-  indexes {
-    (court_id, booking_date, time_slot_id)
-    booking_id
-  }
-}
-
-
-// =======================================================
-// 15. PAYMENTS
-// Payment method được gộp thành field thay vì bảng riêng
-// =======================================================
-
 Table payments {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  booking_id int [not null]
-  user_id int [not null]
+  booking_id bigint [not null, unique]
 
   payment_method varchar(50) [not null]
   transaction_code varchar(100) [unique]
 
   amount decimal(12,2) [not null]
 
-  status varchar(30) [default: 'PENDING']
-
+  status varchar(30) [not null, default: 'PENDING']
   paid_at datetime
 
   created_at datetime [not null]
   updated_at datetime
 
   indexes {
-    booking_id
-    user_id
     status
   }
 }
 
 
 // =======================================================
-// 16. VOUCHERS
+// 13. REVIEWS
+// Mỗi booking chỉ review tối đa 1 lần
 // =======================================================
-
-Table vouchers {
-  id int [pk, increment]
-
-  created_by int
-
-  code varchar(50) [not null, unique]
-
-  name varchar(150)
-  description varchar(500)
-
-  discount_type varchar(30) [not null]
-  discount_value decimal(12,2) [not null]
-
-  min_order_amount decimal(12,2) [default: 0]
-  max_discount_amount decimal(12,2)
-
-  start_at datetime [not null]
-  end_at datetime [not null]
-
-  usage_limit int
-  per_user_limit int [default: 1]
-
-  status varchar(30) [default: 'ACTIVE']
-
-  created_at datetime
-  updated_at datetime
-}
-
-
-// =======================================================
-// 17. VOUCHER_USAGES
-// =======================================================
-
-Table voucher_usages {
-  id int [pk, increment]
-
-  voucher_id int [not null]
-  user_id int [not null]
-  booking_id int [not null]
-
-  discount_amount decimal(12,2) [not null]
-
-  used_at datetime [not null]
-
-  indexes {
-    (voucher_id, user_id, booking_id) [unique]
-    user_id
-  }
-}
-
-
-// =======================================================
-// 18. REVIEWS
-// User chỉ review sau booking hoàn tất
-// =======================================================
-
 Table reviews {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  user_id int [not null]
-  court_id int [not null]
-  booking_id int [not null]
+  user_id bigint [not null]
+  court_id bigint [not null]
+  booking_id bigint [not null, unique]
 
   rating int [not null]
   comment text
 
-  status varchar(30) [default: 'VISIBLE']
+  status varchar(30) [not null, default: 'VISIBLE']
 
   created_at datetime [not null]
   updated_at datetime
 
   indexes {
-    booking_id [unique]
     court_id
+    user_id
+    rating
+  }
+}
+
+
+// =======================================================
+// 14. TEAMS
+// =======================================================
+Table teams {
+  id bigint [pk, increment]
+
+  owner_user_id bigint [not null]
+  sport_id bigint [not null]
+
+  name varchar(150) [not null]
+  description varchar(1000)
+  logo_url varchar(500)
+
+  status varchar(30) [not null, default: 'ACTIVE']
+
+  created_at datetime [not null]
+  updated_at datetime
+
+  indexes {
+    owner_user_id
+    sport_id
+    status
+  }
+}
+
+
+// =======================================================
+// 15. TEAM_MEMBERS
+// =======================================================
+Table team_members {
+  id bigint [pk, increment]
+
+  team_id bigint [not null]
+  user_id bigint [not null]
+
+  team_role varchar(50) [not null, default: 'MEMBER']
+  status varchar(30) [not null, default: 'ACTIVE']
+
+  joined_at datetime [not null]
+
+  indexes {
+    (team_id, user_id) [unique]
     user_id
   }
 }
 
 
 // =======================================================
-// 19. TEAMS
+// 16. TOURNAMENTS
 // =======================================================
-
-Table teams {
-  id int [pk, increment]
-
-  owner_user_id int [not null]
-  sport_id int [not null]
-
-  name varchar(150) [not null]
-
-  description text
-  logo_url varchar(500)
-
-  status varchar(30) [default: 'ACTIVE']
-
-  created_at datetime
-  updated_at datetime
-
-  indexes {
-    owner_user_id
-    sport_id
-  }
-}
-
-
-// =======================================================
-// 20. TEAM_MEMBERS
-// =======================================================
-
-Table team_members {
-  id int [pk, increment]
-
-  team_id int [not null]
-  user_id int [not null]
-
-  team_role varchar(50) [default: 'MEMBER']
-  status varchar(30) [default: 'ACTIVE']
-
-  joined_at datetime
-
-  indexes {
-    (team_id, user_id) [unique]
-  }
-}
-
-
-// =======================================================
-// 21. TOURNAMENTS
-// =======================================================
-
 Table tournaments {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  sport_id int [not null]
-  venue_id int
-
-  created_by int [not null]
+  sport_id bigint [not null]
+  venue_id bigint
+  created_by bigint [not null]
 
   name varchar(200) [not null]
-  description text
+  description varchar(1000)
 
   start_date date [not null]
   end_date date [not null]
@@ -523,104 +377,75 @@ Table tournaments {
 
   max_teams int
 
-  entry_fee decimal(12,2) [default: 0]
+  status varchar(30) [not null, default: 'UPCOMING']
 
-  status varchar(30) [default: 'UPCOMING']
-
-  created_at datetime
+  created_at datetime [not null]
   updated_at datetime
 
   indexes {
     sport_id
     venue_id
+    created_by
     status
+    (start_date, end_date)
   }
 }
 
 
 // =======================================================
-// 22. TOURNAMENT_TEAMS
+// 17. TOURNAMENT_TEAMS
 // =======================================================
-
 Table tournament_teams {
-  id int [pk, increment]
+  id bigint [pk, increment]
 
-  tournament_id int [not null]
-  team_id int [not null]
+  tournament_id bigint [not null]
+  team_id bigint [not null]
 
-  registration_status varchar(30) [default: 'PENDING']
-
+  registration_status varchar(30) [not null, default: 'PENDING']
   seed_number int
 
-  registered_at datetime
+  registered_at datetime [not null]
 
   indexes {
     (tournament_id, team_id) [unique]
+    team_id
   }
 }
 
 
 // =======================================================
-// 23. TOURNAMENT_ROUNDS
+// 18. MATCHES
+// Gộp tournament_rounds bằng round_number
 // =======================================================
+Table matches {
+  id bigint [pk, increment]
 
-Table tournament_rounds {
-  id int [pk, increment]
-
-  tournament_id int [not null]
-
+  tournament_id bigint [not null]
   round_number int [not null]
 
-  name varchar(100)
+  court_id bigint
 
-  status varchar(30) [default: 'PENDING']
-
-  start_date date
-  end_date date
-
-  created_at datetime
-
-  indexes {
-    (tournament_id, round_number) [unique]
-  }
-}
-
-
-// =======================================================
-// 24. MATCHES
-// =======================================================
-
-Table matches {
-  id int [pk, increment]
-
-  tournament_id int [not null]
-  round_id int [not null]
-
-  court_id int
-
-  team1_id int
-  team2_id int
+  team1_id bigint
+  team2_id bigint
 
   scheduled_date date
-
   start_time time
   end_time time
 
-  team1_score int [default: 0]
-  team2_score int [default: 0]
+  team1_score int [not null, default: 0]
+  team2_score int [not null, default: 0]
 
-  winner_team_id int
+  winner_team_id bigint
 
-  status varchar(30) [default: 'SCHEDULED']
+  status varchar(30) [not null, default: 'SCHEDULED']
 
-  created_at datetime
+  created_at datetime [not null]
   updated_at datetime
 
-  // Conflict thời gian xử lý bằng LINQ/Service.
   indexes {
-    (court_id, scheduled_date, start_time, end_time)
     tournament_id
-    round_id
+    (tournament_id, round_number)
+    (court_id, scheduled_date, start_time, end_time)
   }
 }
 
@@ -629,9 +454,7 @@ Table matches {
 // RELATIONSHIPS
 // =======================================================
 
-
-// ---------- USER / AUTH ----------
-
+// ---------- AUTH ----------
 Ref: user_roles.user_id > users.id
 Ref: user_roles.role_id > roles.id
 
@@ -641,48 +464,20 @@ Ref: role_permissions.permission_id > permissions.id
 Ref: user_profiles.user_id > users.id
 
 
-// ---------- SPORT / VENUE / COURT ----------
-
+// ---------- VENUE / COURT ----------
 Ref: venues.owner_id > users.id
 
 Ref: courts.venue_id > venues.id
 Ref: courts.sport_id > sports.id
 
-
-// ---------- SCHEDULE / PRICE ----------
-
 Ref: court_schedules.court_id > courts.id
-
-Ref: court_prices.court_id > courts.id
-Ref: court_prices.time_slot_id > time_slots.id
 
 
 // ---------- BOOKING ----------
-
 Ref: bookings.user_id > users.id
-Ref: bookings.voucher_id > vouchers.id
-
-Ref: booking_details.booking_id > bookings.id
-Ref: booking_details.court_id > courts.id
-Ref: booking_details.time_slot_id > time_slots.id
-
-
-// ---------- PAYMENT ----------
+Ref: bookings.court_id > courts.id
 
 Ref: payments.booking_id > bookings.id
-Ref: payments.user_id > users.id
-
-
-// ---------- VOUCHER ----------
-
-Ref: vouchers.created_by > users.id
-
-Ref: voucher_usages.voucher_id > vouchers.id
-Ref: voucher_usages.user_id > users.id
-Ref: voucher_usages.booking_id > bookings.id
-
-
-// ---------- REVIEW ----------
 
 Ref: reviews.user_id > users.id
 Ref: reviews.court_id > courts.id
@@ -690,7 +485,6 @@ Ref: reviews.booking_id > bookings.id
 
 
 // ---------- TEAM ----------
-
 Ref: teams.owner_user_id > users.id
 Ref: teams.sport_id > sports.id
 
@@ -699,7 +493,6 @@ Ref: team_members.user_id > users.id
 
 
 // ---------- TOURNAMENT ----------
-
 Ref: tournaments.sport_id > sports.id
 Ref: tournaments.venue_id > venues.id
 Ref: tournaments.created_by > users.id
@@ -707,14 +500,9 @@ Ref: tournaments.created_by > users.id
 Ref: tournament_teams.tournament_id > tournaments.id
 Ref: tournament_teams.team_id > teams.id
 
-Ref: tournament_rounds.tournament_id > tournaments.id
-
 
 // ---------- MATCH ----------
-
 Ref: matches.tournament_id > tournaments.id
-Ref: matches.round_id > tournament_rounds.id
-
 Ref: matches.court_id > courts.id
 
 Ref: matches.team1_id > teams.id
