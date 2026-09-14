@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -24,6 +25,7 @@ import java.util.List;
 public class SportService {
 
         private final SportRepository sportRepository;
+        private final AzureBlobStorageService azureBlobStorageService;
 
         // =========================
         // GET ALL
@@ -188,5 +190,29 @@ public class SportService {
                                 sport.getStatus(),
                                 sport.getCreatedAt(),
                                 sport.getUpdatedAt());
+        }
+
+        @Transactional
+        public SportResponse updateIcon(
+                Long id,
+                MultipartFile file) {
+
+        Sport sport =
+                findSportById(id);
+
+        String iconUrl =
+                azureBlobStorageService
+                        .uploadImage(
+                                file,
+                                "sports"
+                        );
+
+        sport.setIconUrl(iconUrl);
+
+        Sport updatedSport =
+                sportRepository
+                        .saveAndFlush(sport);
+
+        return toResponse(updatedSport);
         }
 }

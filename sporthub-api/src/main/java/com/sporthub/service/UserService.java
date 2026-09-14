@@ -21,6 +21,7 @@ import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -36,6 +37,8 @@ public class UserService {
         private final PasswordEncoder passwordEncoder;
 
         private final PermissionRepository permissionRepository;
+
+        private final AzureBlobStorageService azureBlobStorageService;
 
         @Transactional(readOnly = true)
         public Page<UserResponse> getUsers(
@@ -96,66 +99,59 @@ public class UserService {
 
         private UserResponse toUserResponse(User user) {
 
-        List<String> roles =
-                user.getUserRoles()
-                        .stream()
-                        .map(UserRole::getRole)
-                        .map(role -> role.getName())
-                        .toList();
+                List<String> roles = user.getUserRoles()
+                                .stream()
+                                .map(UserRole::getRole)
+                                .map(role -> role.getName())
+                                .toList();
 
-        List<String> permissions =
-                permissionRepository
-                        .findPermissionsByUsername(
-                                user.getUsername()
-                        )
-                        .stream()
-                        .map(permission ->
-                                permission.getCode()
-                        )
-                        .toList();
+                List<String> permissions = permissionRepository
+                                .findPermissionsByUsername(
+                                                user.getUsername())
+                                .stream()
+                                .map(permission -> permission.getCode())
+                                .toList();
 
-        UserProfile profile =
-                user.getProfile();
+                UserProfile profile = user.getProfile();
 
-        return new UserResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
+                return new UserResponse(
+                                user.getId(),
+                                user.getUsername(),
+                                user.getEmail(),
 
-                profile != null
-                        ? profile.getFullName()
-                        : null,
+                                profile != null
+                                                ? profile.getFullName()
+                                                : null,
 
-                profile != null
-                        ? profile.getPhone()
-                        : null,
+                                profile != null
+                                                ? profile.getPhone()
+                                                : null,
 
-                profile != null
-                        ? profile.getGender()
-                        : null,
+                                profile != null
+                                                ? profile.getGender()
+                                                : null,
 
-                profile != null
-                        ? profile.getDateOfBirth()
-                        : null,
+                                profile != null
+                                                ? profile.getDateOfBirth()
+                                                : null,
 
-                profile != null
-                        ? profile.getAvatarUrl()
-                        : null,
+                                profile != null
+                                                ? profile.getAvatarUrl()
+                                                : null,
 
-                profile != null
-                        ? profile.getAddress()
-                        : null,
+                                profile != null
+                                                ? profile.getAddress()
+                                                : null,
 
-                profile != null
-                        ? profile.getCity()
-                        : null,
+                                profile != null
+                                                ? profile.getCity()
+                                                : null,
 
-                user.getStatus(),
+                                user.getStatus(),
 
-                roles,
+                                roles,
 
-                permissions
-        );
+                                permissions);
         }
 
         @Transactional
@@ -218,86 +214,109 @@ public class UserService {
         }
 
         @Transactional
-public UserResponse updateProfile(
-        String username,
-        UpdateProfileRequest request) {
+        public UserResponse updateProfile(
+                        String username,
+                        UpdateProfileRequest request) {
 
-    User user = userRepository
-            .findWithRolesByUsername(username)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException(
-                            "Không tìm thấy user"
-                    )
-            );
+                User user = userRepository
+                                .findWithRolesByUsername(username)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Không tìm thấy user"));
 
-    UserProfile profile = user.getProfile();
+                UserProfile profile = user.getProfile();
 
-    if (profile == null) {
+                if (profile == null) {
 
-        profile = new UserProfile();
+                        profile = new UserProfile();
 
-        profile.setUser(user);
-        user.setProfile(profile);
-    }
+                        profile.setUser(user);
+                        user.setProfile(profile);
+                }
 
-    profile.setFullName(request.getFullName());
-    profile.setPhone(request.getPhone());
-    profile.setGender(request.getGender());
-    profile.setDateOfBirth(request.getDateOfBirth());
-    profile.setAvatarUrl(request.getAvatarUrl());
-    profile.setAddress(request.getAddress());
-    profile.setCity(request.getCity());
+                profile.setFullName(request.getFullName());
+                profile.setPhone(request.getPhone());
+                profile.setGender(request.getGender());
+                profile.setDateOfBirth(request.getDateOfBirth());
+                profile.setAvatarUrl(request.getAvatarUrl());
+                profile.setAddress(request.getAddress());
+                profile.setCity(request.getCity());
 
-    userRepository.save(user);
+                userRepository.save(user);
 
-    return toUserResponse(user);
-}
+                return toUserResponse(user);
+        }
 
-@Transactional
-public void changePassword(
-        String username,
-        ChangePasswordRequest request) {
+        @Transactional
+        public void changePassword(
+                        String username,
+                        ChangePasswordRequest request) {
 
-    User user = userRepository
-            .findByUsername(username)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException(
-                            "Không tìm thấy user"
-                    )
-            );
+                User user = userRepository
+                                .findByUsername(username)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Không tìm thấy user"));
 
-    if (!passwordEncoder.matches(
-            request.getOldPassword(),
-            user.getPasswordHash())) {
+                if (!passwordEncoder.matches(
+                                request.getOldPassword(),
+                                user.getPasswordHash())) {
 
-        throw new IllegalArgumentException(
-                "Mật khẩu cũ không chính xác"
-        );
-    }
+                        throw new IllegalArgumentException(
+                                        "Mật khẩu cũ không chính xác");
+                }
 
-    if (!request.getNewPassword()
-            .equals(request.getConfirmPassword())) {
+                if (!request.getNewPassword()
+                                .equals(request.getConfirmPassword())) {
 
-        throw new IllegalArgumentException(
-                "Xác nhận mật khẩu không khớp"
-        );
-    }
+                        throw new IllegalArgumentException(
+                                        "Xác nhận mật khẩu không khớp");
+                }
 
-    if (passwordEncoder.matches(
-            request.getNewPassword(),
-            user.getPasswordHash())) {
+                if (passwordEncoder.matches(
+                                request.getNewPassword(),
+                                user.getPasswordHash())) {
 
-        throw new IllegalArgumentException(
-                "Mật khẩu mới không được trùng mật khẩu cũ"
-        );
-    }
+                        throw new IllegalArgumentException(
+                                        "Mật khẩu mới không được trùng mật khẩu cũ");
+                }
 
-    user.setPasswordHash(
-            passwordEncoder.encode(
-                    request.getNewPassword()
-            )
-    );
+                user.setPasswordHash(
+                                passwordEncoder.encode(
+                                                request.getNewPassword()));
 
-    userRepository.save(user);
-}
+                userRepository.save(user);
+        }
+
+        @Transactional
+        public UserResponse updateAvatar(
+                        String username,
+                        MultipartFile file) {
+
+                User user = userRepository
+                                .findByUsername(username)
+                                .orElseThrow(
+                                                () -> new ResourceNotFoundException(
+                                                                "Không tìm thấy người dùng"));
+
+                String imageUrl = azureBlobStorageService
+                                .uploadImage(
+                                                file,
+                                                "avatars");
+
+                UserProfile profile = user.getProfile();
+
+                if (profile == null) {
+
+                        profile = new UserProfile();
+
+                        profile.setUser(user);
+
+                        user.setProfile(profile);
+                }
+
+                profile.setAvatarUrl(imageUrl);
+
+                userRepository.save(user);
+
+                return toUserResponse(user);
+        }
 }

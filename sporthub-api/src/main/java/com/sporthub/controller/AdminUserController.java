@@ -1,6 +1,5 @@
 package com.sporthub.controller;
 
-import com.sporthub.constant.Permissions;
 import com.sporthub.dto.request.UpdateUserRolesRequest;
 import com.sporthub.dto.request.UpdateUserStatusRequest;
 import com.sporthub.dto.response.UserResponse;

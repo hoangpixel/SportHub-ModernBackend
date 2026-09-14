@@ -9,9 +9,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -63,6 +65,28 @@ public class AdminSportController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping(
+        value = "/{id}/icon",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+        )
+        @PreAuthorize(
+                "hasAuthority("
+                + "T(com.sporthub.constant.Permissions)"
+                + ".UPDATE_SPORT)"
+        )
+        public ResponseEntity<SportResponse> updateIcon(
+                @PathVariable Long id,
+                @RequestPart("file")
+                MultipartFile file) {
+
+        return ResponseEntity.ok(
+                sportService.updateIcon(
+                        id,
+                        file
+                )
+        );
+        }
 
     // =========================
     // DELETE SPORT
