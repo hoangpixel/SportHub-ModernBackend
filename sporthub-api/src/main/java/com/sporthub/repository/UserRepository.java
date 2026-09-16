@@ -1,6 +1,8 @@
 package com.sporthub.repository;
 
 import com.sporthub.entity.User;
+import com.sporthub.entity.UserProfile;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -13,6 +15,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
+    boolean existsByProfile(UserProfile profile); 
 
     Optional<User> findByUsername(String username);
 

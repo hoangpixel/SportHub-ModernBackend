@@ -18,8 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class SportService {
@@ -100,13 +98,6 @@ public class SportService {
                 sport.setStatus(
                                 SportStatus.ACTIVE);
 
-                /*
-                 * createdAt không cần set ở đây.
-                 * 
-                 * @PrePersist trong Sport Entity
-                 * sẽ tự tạo.
-                 */
-
                 sportRepository.save(sport);
 
                 return toResponse(sport);
@@ -130,11 +121,7 @@ public class SportService {
                                 .findByNameIgnoreCase(newName)
                                 .orElse(null);
 
-                if (existingSport != null
-                                && !existingSport
-                                                .getId()
-                                                .equals(id)) {
-
+                if (existingSport != null && !existingSport.getId().equals(id)) {
                         throw new ConflictException(
                                         "Tên môn thể thao đã tồn tại");
                 }

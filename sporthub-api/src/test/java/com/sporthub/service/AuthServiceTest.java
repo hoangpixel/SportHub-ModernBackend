@@ -18,7 +18,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -61,50 +60,21 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-
-        authService = new AuthService(
-                userRepository,
-                roleRepository,
-                userRoleRepository,
-                authenticationManager,
-                jwtService,
-                passwordEncoder
-        );
+        authService = new AuthService(userRepository, roleRepository, userRoleRepository, authenticationManager, jwtService, passwordEncoder);
     }
 
+    // Đăng ký thành công
     @Test
     void register_success() {
+        RegisterRequest request = createRegisterRequest();
 
-        RegisterRequest request =
-                createRegisterRequest();
+        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(passwordEncoder.encode(request.getPassword())).thenReturn("hashed-password");
 
-        when(
-                userRepository.existsByUsername(
-                        request.getUsername()
-                )
-        ).thenReturn(false);
-
-        when(
-                userRepository.existsByEmail(
-                        request.getEmail()
-                )
-        ).thenReturn(false);
-
-        when(
-                passwordEncoder.encode(
-                        request.getPassword()
-                )
-        ).thenReturn("hashed-password");
-
-        when(
-                userRepository.save(any(User.class))
-        ).thenAnswer(invocation -> {
-
-            User user =
-                    invocation.getArgument(0);
-
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
             user.setId(1L);
-
             return user;
         });
 
@@ -112,309 +82,113 @@ class AuthServiceTest {
         role.setId(1L);
         role.setName(Roles.USER);
 
-        when(
-                roleRepository.findByName(
-                        Roles.USER
-                )
-        ).thenReturn(
-                Optional.of(role)
-        );
+        when(roleRepository.findByName(Roles.USER)).thenReturn(Optional.of(role));
 
-        RegisterResponse response =
-                authService.register(request);
+        RegisterResponse response = authService.register(request);
 
         assertNotNull(response);
+        assertEquals(1L, response.getId());
+        assertEquals("user01", response.getUsername());
+        assertEquals("user01@example.com", response.getEmail());
+        assertEquals("SportHub User", response.getFullName());
 
-        assertEquals(
-                1L,
-                response.getId()
-        );
-
-        assertEquals(
-                "user01",
-                response.getUsername()
-        );
-
-        assertEquals(
-                "user01@example.com",
-                response.getEmail()
-        );
-
-        assertEquals(
-                "SportHub User",
-                response.getFullName()
-        );
-
-        verify(
-                userRepository
-        ).save(
-                any(User.class)
-        );
-
-        verify(
-                userRoleRepository
-        ).save(
-                any(UserRole.class)
-        );
+        verify(userRepository).save(any(User.class));
+        verify(userRoleRepository).save(any(UserRole.class));
     }
 
+    // Đăng ký thất bại do username đã tồn tại
     @Test
     void register_duplicateUsername_shouldThrowConflict() {
+        RegisterRequest request = createRegisterRequest();
 
-        RegisterRequest request =
-                createRegisterRequest();
+        when(userRepository.existsByUsername(request.getUsername())).thenReturn(true);
 
-        when(
-                userRepository.existsByUsername(
-                        request.getUsername()
-                )
-        ).thenReturn(true);
+        ConflictException exception = assertThrows(ConflictException.class, () -> authService.register(request));
 
-        ConflictException exception =
-                assertThrows(
-                        ConflictException.class,
-                        () ->
-                                authService.register(
-                                        request
-                                )
-                );
+        assertEquals("Username đã tồn tại", exception.getMessage());
 
-        assertEquals(
-                "Username đã tồn tại",
-                exception.getMessage()
-        );
-
-        verify(
-                userRepository,
-                never()
-        ).save(
-                any(User.class)
-        );
+        verify(userRepository, never()).save(any(User.class));
     }
 
+    // Đăng ký thất bại do email đã tồn tại
     @Test
     void register_duplicateEmail_shouldThrowConflict() {
+        RegisterRequest request = createRegisterRequest();
 
-        RegisterRequest request =
-                createRegisterRequest();
+        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(true);
 
-        when(
-                userRepository.existsByUsername(
-                        request.getUsername()
-                )
-        ).thenReturn(false);
+        ConflictException exception = assertThrows(ConflictException.class, () -> authService.register(request));
 
-        when(
-                userRepository.existsByEmail(
-                        request.getEmail()
-                )
-        ).thenReturn(true);
+        assertEquals("Email đã tồn tại", exception.getMessage());
 
-        ConflictException exception =
-                assertThrows(
-                        ConflictException.class,
-                        () ->
-                                authService.register(
-                                        request
-                                )
-                );
-
-        assertEquals(
-                "Email đã tồn tại",
-                exception.getMessage()
-        );
-
-        verify(
-                userRepository,
-                never()
-        ).save(
-                any(User.class)
-        );
+        verify(userRepository, never()).save(any(User.class));
     }
 
+    // Đăng nhập thành công
     @Test
     void login_success() {
+        LoginRequest request = new LoginRequest();
+        request.setUsername("admin01");
+        request.setPassword("12345678");
 
-        LoginRequest request =
-                new LoginRequest();
-
-        request.setUsername(
-                "admin01"
-        );
-
-        request.setPassword(
-                "12345678"
-        );
-
-        UserDetails userDetails =
-                org.springframework.security
-                        .core.userdetails.User
-                        .withUsername("admin01")
-                        .password("hashed-password")
-                        .authorities(
-                                List.of(
-                                        new SimpleGrantedAuthority(
-                                                "ROLE_ADMIN"
-                                        ),
-                                        new SimpleGrantedAuthority(
-                                                "VIEW_USERS"
-                                        ),
-                                        new SimpleGrantedAuthority(
-                                                "CREATE_SPORT"
-                                        )
-                                )
+        UserDetails userDetails = org.springframework.security.core.userdetails.User
+                .withUsername("admin01")
+                .password("hashed-password")
+                .authorities(
+                        List.of(
+                                new SimpleGrantedAuthority("ROLE_ADMIN"),
+                                new SimpleGrantedAuthority("VIEW_USERS"),
+                                new SimpleGrantedAuthority("CREATE_SPORT")
                         )
-                        .build();
-
-        Authentication authentication =
-                mock(
-                        Authentication.class
-                );
-
-        when(
-                authentication.getPrincipal()
-        ).thenReturn(
-                userDetails
-        );
-
-        when(
-                authenticationManager.authenticate(
-                        any()
                 )
-        ).thenReturn(
-                authentication
-        );
+                .build();
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(authenticationManager.authenticate(any())).thenReturn(authentication);
 
         User user = new User();
-
         user.setId(3L);
-        user.setUsername(
-                "admin01"
-        );
+        user.setUsername("admin01");
 
-        when(
-                userRepository.findByUsername(
-                        "admin01"
-                )
-        ).thenReturn(
-                Optional.of(user)
-        );
+        when(userRepository.findByUsername("admin01")).thenReturn(Optional.of(user));
+        when(jwtService.generateToken(userDetails, 3L)).thenReturn("fake-jwt-token");
 
-        when(
-                jwtService.generateToken(
-                        userDetails,
-                        3L
-                )
-        ).thenReturn(
-                "fake-jwt-token"
-        );
+        LoginResponse response = authService.login(request);
 
-        LoginResponse response =
-                authService.login(request);
+        assertEquals("fake-jwt-token", response.getAccessToken());
+        assertEquals("Bearer", response.getTokenType());
+        assertEquals(3L, response.getUserId());
+        assertEquals("admin01", response.getUsername());
 
-        assertEquals(
-                "fake-jwt-token",
-                response.getAccessToken()
-        );
-
-        assertEquals(
-                "Bearer",
-                response.getTokenType()
-        );
-
-        assertEquals(
-                3L,
-                response.getUserId()
-        );
-
-        assertEquals(
-                "admin01",
-                response.getUsername()
-        );
-
-        assertTrue(
-                response.getRoles()
-                        .contains(
-                                "ROLE_ADMIN"
-                        )
-        );
-
-        assertTrue(
-                response.getPermissions()
-                        .contains(
-                                "VIEW_USERS"
-                        )
-        );
-
-        assertTrue(
-                response.getPermissions()
-                        .contains(
-                                "CREATE_SPORT"
-                        )
-        );
+        assertTrue(response.getRoles().contains("ROLE_ADMIN"));
+        assertTrue(response.getPermissions().contains("VIEW_USERS"));
+        assertTrue(response.getPermissions().contains("CREATE_SPORT"));
     }
 
+    // Đăng nhập thất bại do sai tài khoản hoặc mật khẩu
     @Test
     void login_badCredentials_shouldThrowException() {
+        LoginRequest request = new LoginRequest();
+        request.setUsername("admin01");
+        request.setPassword("wrong-password");
 
-        LoginRequest request =
-                new LoginRequest();
+        when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad credentials"));
 
-        request.setUsername(
-                "admin01"
-        );
+        assertThrows(BadCredentialsException.class, () -> authService.login(request));
 
-        request.setPassword(
-                "wrong-password"
-        );
-
-        when(
-                authenticationManager.authenticate(
-                        any()
-                )
-        ).thenThrow(
-                new BadCredentialsException(
-                        "Bad credentials"
-                )
-        );
-
-        assertThrows(
-                BadCredentialsException.class,
-                () ->
-                        authService.login(
-                                request
-                        )
-        );
-
-        verify(
-                jwtService,
-                never()
-        ).generateToken(
-                any(),
-                any()
-        );
+        verify(jwtService, never()).generateToken(any(), any());
     }
 
     private RegisterRequest createRegisterRequest() {
+        RegisterRequest request = new RegisterRequest();
 
-        RegisterRequest request =
-                new RegisterRequest();
-
-        request.setUsername(
-                "user01"
-        );
-
-        request.setEmail(
-                "user01@example.com"
-        );
-
-        request.setPassword(
-                "12345678"
-        );
-
-        request.setFullName(
-                "SportHub User"
-        );
+        request.setUsername("user01");
+        request.setEmail("user01@example.com");
+        request.setPassword("12345678");
+        request.setFullName("SportHub User");
 
         return request;
     }
