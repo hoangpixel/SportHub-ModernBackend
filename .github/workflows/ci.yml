@@ -2,7 +2,17 @@ name: SportHub CI
 
 on:
   push:
+    branches:
+      - main
+      - develop
+      - "feat/**"
+      # - "fix/**"
+      # - "test/**"
+
   pull_request:
+    branches:
+      - develop
+      - main
 
 jobs:
   test-and-build:
