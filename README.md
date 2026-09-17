@@ -362,3 +362,4 @@ Không push trực tiếp lên `main` trong workflow hiện tại.
 - Sport CRUD + Search + Pagination: hoàn thành
 - Swagger/OpenAPI: hoàn thành
 - Exception Handling: hoàn thành cơ bản
+- CI branch protection test
