@@ -28,44 +28,27 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider(userDetailsService);
-
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
-
         return provider;
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            DaoAuthenticationProvider authenticationProvider) {
-
+    public AuthenticationManager authenticationManager(DaoAuthenticationProvider authenticationProvider) {
         return new ProviderManager(authenticationProvider);
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            DaoAuthenticationProvider authenticationProvider)
-            throws Exception {
-
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )
-                )
-
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers(
                                 "/api/auth/register",
-                                "/api/auth/login"
+                                "/api/auth/login",
+                                "/error"
                         ).permitAll()
 
                         // Swagger / OpenAPI
@@ -84,56 +67,27 @@ public class SecurityConfig {
 
                         .anyRequest().authenticated()
                 )
-
                 .exceptionHandling(exception -> exception
-
-                        .authenticationEntryPoint(
-                                (request, response, ex) -> {
-
-                                    response.setStatus(
-                                            HttpServletResponse.SC_UNAUTHORIZED
-                                    );
-
-                                    response.setContentType(
-                                            "application/json;charset=UTF-8"
-                                    );
-
-                                    response.getWriter().write(
-                                            """
-                                            {
-                                              "message": "Chưa đăng nhập hoặc token không hợp lệ"
-                                            }
-                                            """
-                                    );
-                                }
-                        )
-
-                        .accessDeniedHandler(
-                                (request, response, ex) -> {
-
-                                    response.setStatus(
-                                            HttpServletResponse.SC_FORBIDDEN
-                                    );
-
-                                    response.setContentType(
-                                            "application/json;charset=UTF-8"
-                                    );
-
-                                    response.getWriter().write(
-                                            """
-                                            {
-                                              "message": "Bạn không có quyền thực hiện chức năng này"
-                                            }
-                                            """
-                                    );
-                                }
-                        )
+                        .authenticationEntryPoint((request, response, ex) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("""
+                                    {
+                                      "message": "Chưa đăng nhập hoặc token không hợp lệ"
+                                    }
+                                    """);
+                        })
+                        .accessDeniedHandler((request, response, ex) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("""
+                                    {
+                                      "message": "Bạn không có quyền thực hiện chức năng này"
+                                    }
+                                    """);
+                        })
                 )
-
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                );
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

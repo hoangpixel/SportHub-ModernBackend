@@ -24,9 +24,6 @@ public class AdminSportController {
 
     private final SportService sportService;
 
-    // =========================
-    // CREATE SPORT
-    // =========================
     @PostMapping
     @PreAuthorize(
         "hasAuthority(T(com.sporthub.constant.Permissions).CREATE_SPORT)"
@@ -44,9 +41,6 @@ public class AdminSportController {
                 .body(response);
     }
 
-    // =========================
-    // UPDATE SPORT
-    // =========================
     @PutMapping("/{id}")
     @PreAuthorize(
         "hasAuthority(T(com.sporthub.constant.Permissions).UPDATE_SPORT)"
@@ -88,9 +82,6 @@ public class AdminSportController {
         );
         }
 
-    // =========================
-    // DELETE SPORT
-    // =========================
     @DeleteMapping("/{id}")
     @PreAuthorize(
         "hasAuthority(T(com.sporthub.constant.Permissions).DELETE_SPORT)"
