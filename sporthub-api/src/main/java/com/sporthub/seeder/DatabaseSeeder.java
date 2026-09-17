@@ -12,6 +12,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final RoleSeeder roleSeeder;
     private final PermissionSeeder permissionSeeder;
     private final DevelopmentSeeder developmentSeeder;
+    private final VenueCourtSeeder venueCourtSeeder;
 
     @Override
     @Transactional
@@ -22,5 +23,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         permissionSeeder.seed();
 
         developmentSeeder.seed();
+
+        venueCourtSeeder.seed();
     }
 }
