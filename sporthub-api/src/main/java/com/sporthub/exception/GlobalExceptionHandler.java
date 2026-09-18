@@ -14,9 +14,15 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.security.access.AccessDeniedException;
+
+import com.sporthub.dto.response.ErrorResponse;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -27,11 +33,11 @@ public class GlobalExceptionHandler {
             BadCredentialsException.class,
             UsernameNotFoundException.class
     })
-    public ResponseEntity<Map<String, String>> handleBadCredentials(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleBadCredentials(Exception ex) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of(
-                        "message",
+                .body(new ErrorResponse(
+                        HttpStatus.UNAUTHORIZED.value(),
                         "Username hoặc mật khẩu không chính xác"
                 ));
     }
@@ -40,11 +46,11 @@ public class GlobalExceptionHandler {
     // 401 - ACCOUNT DISABLED
     // =========================
     @ExceptionHandler(DisabledException.class)
-    public ResponseEntity<Map<String, String>> handleDisabled(DisabledException ex) {
+    public ResponseEntity<ErrorResponse> handleDisabled(DisabledException ex) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of(
-                        "message",
+                .body(new ErrorResponse(
+                        HttpStatus.UNAUTHORIZED.value(),
                         "Tài khoản hiện không thể đăng nhập"
                 ));
     }
@@ -53,8 +59,8 @@ public class GlobalExceptionHandler {
     // 400 - @Valid
     // =========================
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new LinkedHashMap<>();
 
         ex.getBindingResult()
                 .getFieldErrors()
@@ -65,19 +71,18 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .badRequest()
-                .body(Map.of(
-                        "message",
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
                         "Dữ liệu không hợp lệ",
-                        "errors",
                         errors
                 ));
     }
 
     // =========================
-    // 400 - REQUEST PARAM / PATH VARIABLE VALIDATION
+    // 400 - REQUEST PARAM / PATH VARIABLE
     // =========================
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
         Map<String, String> errors = new LinkedHashMap<>();
 
         ex.getConstraintViolations().forEach(violation -> {
@@ -86,23 +91,24 @@ public class GlobalExceptionHandler {
             errors.put(field, violation.getMessage());
         });
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("status", 400);
-        response.put("message", "Dữ liệu không hợp lệ");
-        response.put("errors", errors);
-
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity
+                .badRequest()
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Dữ liệu không hợp lệ",
+                        errors
+                ));
     }
 
     // =========================
     // 400 - JSON SAI FORMAT
     // =========================
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidJson(HttpMessageNotReadableException ex) {
+    public ResponseEntity<ErrorResponse> handleInvalidJson(HttpMessageNotReadableException ex) {
         return ResponseEntity
                 .badRequest()
-                .body(Map.of(
-                        "message",
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
                         "Dữ liệu JSON không hợp lệ"
                 ));
     }
@@ -111,24 +117,37 @@ public class GlobalExceptionHandler {
     // 400 - BUSINESS INPUT
     // =========================
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity
                 .badRequest()
-                .body(Map.of(
-                        "message",
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
                         ex.getMessage()
                 ));
     }
 
     // =========================
+    // 403 - METHOD SECURITY
+    // =========================
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(
+                        HttpStatus.FORBIDDEN.value(),
+                        "Bạn không có quyền thực hiện chức năng này"
+                ));
+     }
+
+    // =========================
     // 404
     // =========================
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        "message",
+                .body(new ErrorResponse(
+                        HttpStatus.NOT_FOUND.value(),
                         ex.getMessage()
                 ));
     }
@@ -137,11 +156,11 @@ public class GlobalExceptionHandler {
     // 409
     // =========================
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<Map<String, String>> handleConflict(ConflictException ex) {
+    public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(Map.of(
-                        "message",
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
                         ex.getMessage()
                 ));
     }
@@ -150,12 +169,27 @@ public class GlobalExceptionHandler {
     // 409 - DATABASE CONSTRAINT
     // =========================
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<Map<String, String>> handleDataIntegrity(DataIntegrityViolationException ex) {
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(Map.of(
-                        "message",
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
                         "Dữ liệu đang được sử dụng hoặc vi phạm ràng buộc"
+                ));
+    }
+
+    // =========================
+    // 500 - UNEXPECTED ERROR
+    // =========================
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
+        log.error("Unhandled exception", ex);
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "Đã xảy ra lỗi hệ thống"
                 ));
     }
 }

@@ -25,20 +25,16 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(
-            Authentication authentication) {
-
+    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
         return ResponseEntity.ok(
-                userService.getCurrentUser(
-                        authentication.getName()
-                )
+                userService.getCurrentUser(authentication.getName())
         );
     }
 
-        @PutMapping("/me")
-        public ResponseEntity<UserResponse> updateProfile(
-                Authentication authentication,
-                @Valid @RequestBody UpdateProfileRequest request) {
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateProfile(
+            Authentication authentication,
+            @Valid @RequestBody UpdateProfileRequest request) {
 
         return ResponseEntity.ok(
                 userService.updateProfile(
@@ -46,13 +42,12 @@ public class UserController {
                         request
                 )
         );
-        }
+    }
 
     @PutMapping("/me/password")
     public ResponseEntity<Map<String, String>> changePassword(
             Authentication authentication,
-            @Valid
-            @RequestBody ChangePasswordRequest request) {
+            @Valid @RequestBody ChangePasswordRequest request) {
 
         userService.changePassword(
                 authentication.getName(),
@@ -68,13 +63,12 @@ public class UserController {
     }
 
     @PutMapping(
-        value = "/me/avatar",
-        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-        )
-        public ResponseEntity<UserResponse> updateAvatar(
-                Authentication authentication,
-                @RequestPart("file")
-                MultipartFile file) {
+            value = "/me/avatar",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<UserResponse> updateAvatar(
+            Authentication authentication,
+            @RequestPart("file") MultipartFile file) {
 
         return ResponseEntity.ok(
                 userService.updateAvatar(
@@ -82,5 +76,5 @@ public class UserController {
                         file
                 )
         );
-        }
+    }
 }

@@ -203,43 +203,55 @@ public class UserService {
         }
 
         @Transactional(readOnly = true)
-        public UserResponse getCurrentUser(String username) {
+                public UserResponse getCurrentUser(String username) {
 
+                        User user = userRepository
+                                        .findWithRolesByUsername(username)
+                                        .orElseThrow(() -> new ResourceNotFoundException(
+                                                        "Không tìm thấy user"));
+
+                        return toUserResponse(user);
+                }
+
+                @Transactional
+                public UserResponse updateProfile(String username, UpdateProfileRequest request) {
                 User user = userRepository
-                                .findWithRolesByUsername(username)
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Không tìm thấy user"));
-
-                return toUserResponse(user);
-        }
-
-        @Transactional
-        public UserResponse updateProfile(
-                        String username,
-                        UpdateProfileRequest request) {
-
-                User user = userRepository
-                                .findWithRolesByUsername(username)
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Không tìm thấy user"));
+                        .findWithRolesByUsername(username)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Không tìm thấy user"
+                        ));
 
                 UserProfile profile = user.getProfile();
 
                 if (profile == null) {
-
                         profile = new UserProfile();
-
                         profile.setUser(user);
                         user.setProfile(profile);
                 }
 
-                profile.setFullName(request.getFullName());
-                profile.setPhone(request.getPhone());
-                profile.setGender(request.getGender());
-                profile.setDateOfBirth(request.getDateOfBirth());
-                profile.setAvatarUrl(request.getAvatarUrl());
-                profile.setAddress(request.getAddress());
-                profile.setCity(request.getCity());
+                if (request.getFullName() != null) {
+                        profile.setFullName(request.getFullName());
+                }
+
+                if (request.getPhone() != null) {
+                        profile.setPhone(request.getPhone());
+                }
+
+                if (request.getGender() != null) {
+                        profile.setGender(request.getGender());
+                }
+
+                if (request.getDateOfBirth() != null) {
+                        profile.setDateOfBirth(request.getDateOfBirth());
+                }
+
+                if (request.getAddress() != null) {
+                        profile.setAddress(request.getAddress());
+                }
+
+                if (request.getCity() != null) {
+                        profile.setCity(request.getCity());
+                }
 
                 userRepository.save(user);
 
