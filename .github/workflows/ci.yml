@@ -6,8 +6,8 @@ on:
       - main
       - develop
       - "feat/**"
-      # - "fix/**"
-      # - "test/**"
+      - "fix/**"
+      - "test/**"
 
   pull_request:
     branches:
