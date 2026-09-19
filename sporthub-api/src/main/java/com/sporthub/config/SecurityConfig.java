@@ -87,6 +87,18 @@ public class SecurityConfig {
                                 "/api/sports/**"
                         ).permitAll()
 
+                        // Actuator health public
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/actuator/health/**"
+                        ).permitAll()
+
+                        // Actuator metrics only ADMIN
+                        .requestMatchers(
+                                "/actuator/metrics",
+                                "/actuator/metrics/**"
+                        ).hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
 

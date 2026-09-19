@@ -9,6 +9,7 @@ import com.sporthub.exception.ResourceNotFoundException;
 import com.sporthub.repository.SportRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SportService {
@@ -33,7 +35,7 @@ public class SportService {
                         String keyword,
                         int page,
                         int size) {
-
+                                log.info("Fetching sports - keyword={}, page={}, size={}", keyword, page, size);
                 Pageable pageable = PageRequest.of(
                                 page,
                                 size,
