@@ -26,7 +26,7 @@ The project is built to demonstrate both backend implementation and engineering 
 
 ---
 
-## 2. Tech Stack
+## 2. Tech Stacks
 
 | Area | Technology |
 |---|---|
