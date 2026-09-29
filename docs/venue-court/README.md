@@ -58,7 +58,7 @@ Seed Venue/Court chạy trong transaction. Khi venue hoặc court đã tồn t�
 
 ## Cách chạy và nghiệm thu
 
-Yêu cầu Docker Desktop/Docker Engine với Compose v2. Từ `sporthub-api`, chạy `docker compose -p sporthub-huy-verify -f compose.verify.yml up -d --build`. Dockerfile đồng bộ với `feat/auth-user-sport`: build từ source bằng Maven Wrapper trên `eclipse-temurin:21-jdk`, chạy bằng `eclipse-temurin:21-jre`; cả hai file Compose dùng MySQL 8.4. Không yêu cầu có sẵn target/JAR. Stack verify giữ healthcheck TCP để tránh khởi động backend trước khi database thực sự sẵn sàng. Compose chính và verify cùng dùng MySQL 8.4. Sau khi cập nhật nền develop, stack verify có thêm Azurite để đáp ứng cấu hình upload của Auth/User; không cần tài khoản Azure thật. Cấu hình verify dùng database riêng, cổng loopback 18080, thông tin demo công khai; không dùng `.env` cá nhân.
+Yêu cầu Docker Desktop/Docker Engine với Compose v2. Từ `sporthub-api`, chạy `docker compose -p sporthub-huy-verify -f compose.verify.yml up -d --build`. Dockerfile đồng bộ với `feat/auth-user-sport`: build từ source bằng Maven Wrapper trên `eclipse-temurin:21-jdk`, chạy bằng `eclipse-temurin:21-jre`; cả hai file Compose dùng MySQL 8.4. Không yêu cầu có sẵn target/JAR. Stack verify giữ healthcheck TCP để tránh khởi động backend trước khi database thực sự sẵn sàng. Compose chính và verify cùng dùng MySQL 8.4. Sau khi cập nhật nền develop, stack verify đã được cấu hình đồng bộ để sử dụng Azure Blob Storage (thay vì Azurite) cho upload của Auth/User; yêu cầu có AZURE_STORAGE_CONNECTION_STRING. Cấu hình verify dùng database riêng, cổng loopback 18080, thông tin demo công khai; không dùng `.env` cá nhân.
 
 Từ thư mục gốc repo, dùng PowerShell 7:
 
