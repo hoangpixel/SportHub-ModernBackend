@@ -12,9 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class AzureStorageConfig {
 
     @Bean
-    public BlobServiceClient blobServiceClient(
-            @Value("${azure.storage.connection-string}")
-            String connectionString) {
+    public BlobServiceClient blobServiceClient(@Value("${azure.storage.connection-string}") String connectionString) {
 
         return new BlobServiceClientBuilder()
                 .connectionString(connectionString)
@@ -22,14 +20,9 @@ public class AzureStorageConfig {
     }
 
     @Bean
-    public BlobContainerClient blobContainerClient(
-            BlobServiceClient blobServiceClient,
-            @Value("${azure.storage.container-name}")
-            String containerName) {
+    public BlobContainerClient blobContainerClient(BlobServiceClient blobServiceClient, @Value("${azure.storage.container-name}") String containerName) {
 
-        BlobContainerClient containerClient =
-                blobServiceClient
-                        .getBlobContainerClient(containerName);
+        BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
 
         containerClient.createIfNotExists();
 

@@ -1,5 +1,10 @@
 package com.sporthub.service;
 
+import com.sporthub.dto.request.CreateAdminUserRequest;
+import com.sporthub.dto.request.UpdateAdminUserRequest;
+import com.sporthub.enums.UserStatus;
+import com.sporthub.exception.ConflictException;
+
 import com.sporthub.dto.request.ChangePasswordRequest;
 import com.sporthub.dto.request.UpdateProfileRequest;
 import com.sporthub.dto.request.UpdateUserRolesRequest;
@@ -331,4 +336,247 @@ public class UserService {
 
                 return toUserResponse(user);
         }
+
+        @Transactional
+public UserResponse createUser(CreateAdminUserRequest request) {
+
+    if (userRepository.existsByUsername(request.getUsername())) {
+        throw new ConflictException(
+                "Username đã tồn tại: " + request.getUsername()
+        );
+    }
+
+    if (userRepository.existsByEmail(request.getEmail())) {
+        throw new ConflictException(
+                "Email đã tồn tại: " + request.getEmail()
+        );
+    }
+
+    List<Role> roles = request.getRoles()
+            .stream()
+            .map(roleName ->
+                    roleRepository.findByName(roleName)
+                            .orElseThrow(() ->
+                                    new IllegalArgumentException(
+                                            "Role không tồn tại: " + roleName
+                                    )
+                            )
+            )
+            .toList();
+
+    User user = new User();
+
+    user.setUsername(request.getUsername());
+    user.setEmail(request.getEmail());
+
+    user.setPasswordHash(
+            passwordEncoder.encode(
+                    request.getPassword()
+            )
+    );
+
+    user.setStatus(
+            request.getStatus() != null
+                    ? request.getStatus()
+                    : UserStatus.ACTIVE
+    );
+
+    UserProfile profile = new UserProfile();
+
+    profile.setUser(user);
+    profile.setFullName(request.getFullName());
+    profile.setPhone(request.getPhone());
+    profile.setGender(request.getGender());
+    profile.setDateOfBirth(request.getDateOfBirth());
+    profile.setAddress(request.getAddress());
+    profile.setCity(request.getCity());
+
+    user.setProfile(profile);
+
+    user = userRepository.save(user);
+
+    for (Role role : roles) {
+
+        UserRole userRole = new UserRole();
+
+        userRole.setId(
+                new UserRoleId(
+                        user.getId(),
+                        role.getId()
+                )
+        );
+
+        userRole.setUser(user);
+        userRole.setRole(role);
+
+        userRoleRepository.save(userRole);
+    }
+
+    User createdUser =
+            userRepository.findWithRolesById(user.getId())
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "Không tìm thấy user vừa tạo"
+                            )
+                    );
+
+    return toUserResponse(createdUser);
+}
+
+@Transactional
+public UserResponse updateUser(
+        Long id,
+        UpdateAdminUserRequest request) {
+
+    User user =
+            userRepository.findWithRolesById(id)
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "Không tìm thấy user có id = " + id
+                            )
+                    );
+
+    if (
+            request.getUsername() != null &&
+            !request.getUsername().equals(user.getUsername())
+    ) {
+
+        if (
+                userRepository.existsByUsername(
+                        request.getUsername()
+                )
+        ) {
+            throw new ConflictException(
+                    "Username đã tồn tại: " +
+                            request.getUsername()
+            );
+        }
+
+        user.setUsername(
+                request.getUsername()
+        );
+    }
+
+    if (
+            request.getEmail() != null &&
+            !request.getEmail().equalsIgnoreCase(user.getEmail())
+    ) {
+
+        if (
+                userRepository.existsByEmail(
+                        request.getEmail()
+                )
+        ) {
+            throw new ConflictException(
+                    "Email đã tồn tại: " +
+                            request.getEmail()
+            );
+        }
+
+        user.setEmail(
+                request.getEmail()
+        );
+    }
+
+    UserProfile profile =
+            user.getProfile();
+
+    if (profile == null) {
+
+        profile =
+                new UserProfile();
+
+        profile.setUser(user);
+
+        user.setProfile(profile);
+    }
+
+    profile.setFullName(
+            request.getFullName()
+    );
+
+    profile.setPhone(
+            request.getPhone()
+    );
+
+    profile.setGender(
+            request.getGender()
+    );
+
+    profile.setDateOfBirth(
+            request.getDateOfBirth()
+    );
+
+    profile.setAddress(
+            request.getAddress()
+    );
+
+    profile.setCity(
+            request.getCity()
+    );
+
+    userRepository.save(user);
+
+    return toUserResponse(user);
+}
+
+
+@Transactional
+public void deactivateUser(Long id) {
+
+    User user =
+            userRepository.findById(id)
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "Không tìm thấy user có id = " + id
+                            )
+                    );
+
+    user.setStatus(
+            UserStatus.INACTIVE
+    );
+
+    userRepository.save(user);
+}
+
+@Transactional
+public UserResponse updateUserAvatar(
+        Long id,
+        MultipartFile file) {
+
+    User user =
+            userRepository.findWithRolesById(id)
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "Không tìm thấy user có id = " + id
+                            )
+                    );
+
+    String imageUrl =
+            azureBlobStorageService.uploadImage(
+                    file,
+                    "avatars"
+            );
+
+    UserProfile profile =
+            user.getProfile();
+
+    if (profile == null) {
+
+        profile =
+                new UserProfile();
+
+        profile.setUser(user);
+
+        user.setProfile(profile);
+    }
+
+    profile.setAvatarUrl(
+            imageUrl
+    );
+
+    userRepository.save(user);
+
+    return toUserResponse(user);
+}
 }

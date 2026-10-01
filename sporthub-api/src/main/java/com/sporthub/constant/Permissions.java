@@ -9,6 +9,9 @@ public final class Permissions {
 
     // USER / ADMIN USER MANAGEMENT
     public static final String VIEW_USERS = "VIEW_USERS";
+    public static final String CREATE_USER = "CREATE_USER";
+    public static final String UPDATE_USER = "UPDATE_USER";
+    public static final String DELETE_USER = "DELETE_USER";
     public static final String UPDATE_USER_STATUS = "UPDATE_USER_STATUS";
     public static final String UPDATE_USER_ROLES = "UPDATE_USER_ROLES";
 
@@ -42,6 +45,9 @@ public final class Permissions {
 
     public static final List<String> ALL = List.of(
             VIEW_USERS,
+            CREATE_USER,
+            UPDATE_USER,
+            DELETE_USER,
             UPDATE_USER_STATUS,
             UPDATE_USER_ROLES,
 

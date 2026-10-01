@@ -1,6 +1,7 @@
 package com.sporthub.controller;
 
-import com.sporthub.constant.Permissions;
+import com.sporthub.dto.request.CreateAdminUserRequest;
+import com.sporthub.dto.request.UpdateAdminUserRequest;
 import com.sporthub.dto.request.UpdateUserRolesRequest;
 import com.sporthub.dto.request.UpdateUserStatusRequest;
 import com.sporthub.dto.response.UserResponse;
@@ -14,10 +15,12 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -56,6 +59,29 @@ public class AdminUserController {
         );
     }
 
+    @PostMapping
+    @PreAuthorize("hasAuthority(T(com.sporthub.constant.Permissions).CREATE_USER)")
+    public ResponseEntity<UserResponse> createUser(
+            @Valid @RequestBody CreateAdminUserRequest request) {
+
+        return ResponseEntity.ok(
+                userService.createUser(request)
+        );
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority(T(com.sporthub.constant.Permissions).UPDATE_USER)")
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable
+            @Positive(message = "ID phải lớn hơn 0")
+            Long id,
+            @Valid @RequestBody UpdateAdminUserRequest request) {
+
+        return ResponseEntity.ok(
+                userService.updateUser(id, request)
+        );
+    }
+
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAuthority(T(com.sporthub.constant.Permissions).UPDATE_USER_STATUS)")
     public ResponseEntity<UserResponse> updateStatus(
@@ -79,6 +105,34 @@ public class AdminUserController {
 
         return ResponseEntity.ok(
                 userService.updateRoles(id, request)
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority(T(com.sporthub.constant.Permissions).DELETE_USER)")
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable
+            @Positive(message = "ID phải lớn hơn 0")
+            Long id) {
+
+        userService.deactivateUser(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping(
+            value = "/{id}/avatar",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @PreAuthorize("hasAuthority(T(com.sporthub.constant.Permissions).UPDATE_USER)")
+    public ResponseEntity<UserResponse> updateAvatar(
+            @PathVariable
+            @Positive(message = "ID phải lớn hơn 0")
+            Long id,
+            @RequestPart("file") MultipartFile file) {
+
+        return ResponseEntity.ok(
+                userService.updateUserAvatar(id, file)
         );
     }
 }
