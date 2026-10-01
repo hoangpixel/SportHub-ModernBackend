@@ -102,4 +102,30 @@ class RepositoryJpaTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void count_users_by_role_success() {
+        User user1 = createUser("user100", "user100@gmail.com");
+        User user2 = createUser("user200", "user200@gmail.com");
+
+        Role role = new Role();
+        role.setName("USER");
+        role = roleRepository.saveAndFlush(role);
+
+        UserRole userRole1 = new UserRole();
+        userRole1.setId(new UserRoleId(user1.getId(), role.getId()));
+        userRole1.setUser(user1);
+        userRole1.setRole(role);
+
+        UserRole userRole2 = new UserRole();
+        userRole2.setId(new UserRoleId(user2.getId(), role.getId()));
+        userRole2.setUser(user2);
+        userRole2.setRole(role);
+
+        userRoleRepository.saveAllAndFlush(List.of(userRole1, userRole2));
+
+        long result = userRoleRepository.countByRole_Id(role.getId());
+
+        assertEquals(2L, result);
+    }
 }
