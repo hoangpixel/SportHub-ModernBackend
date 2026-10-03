@@ -13,7 +13,6 @@ public class ServiceLoggingAspect {
 
     @Around("execution(public * com.sporthub.service..*(..))")
     public Object measureExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable {
-
         long startTime = System.nanoTime();
 
         try {
@@ -22,18 +21,10 @@ public class ServiceLoggingAspect {
             long endTime = System.nanoTime();
             long durationMs = (endTime - startTime) / 1_000_000;
 
-            String className = joinPoint.getSignature()
-                    .getDeclaringType()
-                    .getSimpleName();
-
+            String className = joinPoint.getSignature().getDeclaringType().getSimpleName();
             String methodName = joinPoint.getSignature().getName();
 
-            log.info(
-                    "Service execution - {}.{} took {} ms",
-                    className,
-                    methodName,
-                    durationMs
-            );
+            log.info("Service execution - {}.{} took {} ms", className, methodName, durationMs);
         }
     }
 }

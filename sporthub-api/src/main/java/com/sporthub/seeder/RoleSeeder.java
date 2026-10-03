@@ -13,14 +13,12 @@ public class RoleSeeder {
     private final RoleRepository roleRepository;
 
     public void seed() {
-
         createIfNotExists(Roles.USER);
         createIfNotExists(Roles.OWNER);
         createIfNotExists(Roles.ADMIN);
     }
 
     private void createIfNotExists(String roleName) {
-
         if (roleRepository.findByName(roleName).isPresent()) {
             return;
         }

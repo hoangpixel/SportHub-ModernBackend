@@ -1,9 +1,9 @@
 package com.sporthub.security;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -24,9 +24,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
     private String resolveRequestId(HttpServletRequest request) {
         String requestId = request.getHeader(REQUEST_ID_HEADER);
 
-        if (requestId == null
-                || requestId.isBlank()
-                || !requestId.matches(REQUEST_ID_PATTERN)) {
+        if (requestId == null || requestId.isBlank() || !requestId.matches(REQUEST_ID_PATTERN)) {
             return UUID.randomUUID().toString();
         }
 
@@ -34,10 +32,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
         String requestId = resolveRequestId(request);
@@ -45,7 +40,6 @@ public class RequestIdFilter extends OncePerRequestFilter {
         try {
             MDC.put(MDC_KEY, requestId);
             response.setHeader(REQUEST_ID_HEADER, requestId);
-
             filterChain.doFilter(request, response);
         } finally {
             MDC.remove(MDC_KEY);

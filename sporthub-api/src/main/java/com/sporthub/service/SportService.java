@@ -7,10 +7,8 @@ import com.sporthub.enums.SportStatus;
 import com.sporthub.exception.ConflictException;
 import com.sporthub.exception.ResourceNotFoundException;
 import com.sporthub.repository.SportRepository;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,184 +22,123 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class SportService {
 
-        private final SportRepository sportRepository;
-        private final AzureBlobStorageService azureBlobStorageService;
+    private final SportRepository sportRepository;
+    private final AzureBlobStorageService azureBlobStorageService;
 
-        // =========================
-        // GET ALL
-        // =========================
-        @Transactional(readOnly = true)
-        public Page<SportResponse> getAllSports(
-                        String keyword,
-                        int page,
-                        int size) {
-                                log.info("Fetching sports - keyword={}, page={}, size={}", keyword, page, size);
-                Pageable pageable = PageRequest.of(
-                                page,
-                                size,
-                                Sort.by("id").ascending());
+    // =========================
+    // GET ALL
+    // =========================
+    @Transactional(readOnly = true)
+    public Page<SportResponse> getAllSports(String keyword, int page, int size) {
+        log.info("Fetching sports - keyword={}, page={}, size={}", keyword, page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
 
-                Page<Sport> sports;
-
-                if (keyword == null || keyword.isBlank()) {
-
-                        sports = sportRepository.findAll(pageable);
-
-                } else {
-
-                        sports = sportRepository
-                                        .findByNameContainingIgnoreCase(
-                                                        keyword,
-                                                        pageable);
-                }
-
-                return sports.map(this::toResponse);
+        Page<Sport> sports;
+        if (keyword == null || keyword.isBlank()) {
+            sports = sportRepository.findAll(pageable);
+        } else {
+            sports = sportRepository.findByNameContainingIgnoreCase(keyword, pageable);
         }
 
-        // =========================
-        // GET BY ID
-        // =========================
-        @Transactional(readOnly = true)
-        public SportResponse getSportById(Long id) {
+        return sports.map(this::toResponse);
+    }
 
-                Sport sport = findSportById(id);
+    // =========================
+    // GET BY ID
+    // =========================
+    @Transactional(readOnly = true)
+    public SportResponse getSportById(Long id) {
+        Sport sport = findSportById(id);
+        return toResponse(sport);
+    }
 
-                return toResponse(sport);
+    // =========================
+    // CREATE
+    // =========================
+    @Transactional
+    public SportResponse createSport(SportRequest request) {
+        String name = request.getName().trim();
+
+        // Kiểm tra trùng tên
+        if (sportRepository.existsByNameIgnoreCase(name)) {
+            throw new ConflictException("Môn thể thao đã tồn tại");
         }
 
-        // =========================
-        // CREATE
-        // =========================
-        @Transactional
-        public SportResponse createSport(
-                        SportRequest request) {
+        Sport sport = new Sport();
+        sport.setName(name);
+        sport.setDescription(request.getDescription());
+        sport.setIconUrl(request.getIconUrl());
+        // Sport mới mặc định ACTIVE
+        sport.setStatus(SportStatus.ACTIVE);
 
-                String name = request
-                                .getName()
-                                .trim();
+        sportRepository.save(sport);
 
-                // Kiểm tra trùng tên
-                if (sportRepository
-                                .existsByNameIgnoreCase(name)) {
+        return toResponse(sport);
+    }
 
-                        throw new ConflictException(
-                                        "Môn thể thao đã tồn tại");
-                }
+    // =========================
+    // UPDATE
+    // =========================
+    @Transactional
+    public SportResponse updateSport(Long id, SportRequest request) {
+        Sport sport = findSportById(id);
 
-                Sport sport = new Sport();
+        String newName = request.getName().trim();
+        Sport existingSport = sportRepository.findByNameIgnoreCase(newName).orElse(null);
 
-                sport.setName(name);
-                sport.setDescription(
-                                request.getDescription());
-                sport.setIconUrl(
-                                request.getIconUrl());
-
-                // Sport mới mặc định ACTIVE
-                sport.setStatus(
-                                SportStatus.ACTIVE);
-
-                sportRepository.save(sport);
-
-                return toResponse(sport);
+        if (existingSport != null && !existingSport.getId().equals(id)) {
+            throw new ConflictException("Tên môn thể thao đã tồn tại");
         }
 
-        // =========================
-        // UPDATE
-        // =========================
-        @Transactional
-        public SportResponse updateSport(
-                        Long id,
-                        SportRequest request) {
+        sport.setName(newName);
+        sport.setDescription(request.getDescription());
+        sport.setIconUrl(request.getIconUrl());
 
-                Sport sport = findSportById(id);
-
-                String newName = request
-                                .getName()
-                                .trim();
-
-                Sport existingSport = sportRepository
-                                .findByNameIgnoreCase(newName)
-                                .orElse(null);
-
-                if (existingSport != null && !existingSport.getId().equals(id)) {
-                        throw new ConflictException(
-                                        "Tên môn thể thao đã tồn tại");
-                }
-
-                sport.setName(newName);
-
-                sport.setDescription(
-                                request.getDescription());
-
-                sport.setIconUrl(
-                                request.getIconUrl());
-
-                Sport updatedSport = sportRepository.saveAndFlush(sport);
-
-                return toResponse(updatedSport);
-        }
-
-        // =========================
-        // DELETE
-        // =========================
-        @Transactional
-        public void deleteSport(Long id) {
-
-                Sport sport = findSportById(id);
-
-                sportRepository.delete(sport);
-        }
-
-        // =========================
-        // FIND ENTITY
-        // =========================
-        private Sport findSportById(
-                        Long id) {
-
-                return sportRepository
-                                .findById(id)
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Không tìm thấy môn thể thao có id = "
-                                                                + id));
-        }
-
-        // =========================
-        // ENTITY -> RESPONSE DTO
-        // =========================
-        private SportResponse toResponse(
-                        Sport sport) {
-
-                return new SportResponse(
-                                sport.getId(),
-                                sport.getName(),
-                                sport.getDescription(),
-                                sport.getIconUrl(),
-                                sport.getStatus(),
-                                sport.getCreatedAt(),
-                                sport.getUpdatedAt());
-        }
-
-        @Transactional
-        public SportResponse updateIcon(
-                Long id,
-                MultipartFile file) {
-
-        Sport sport =
-                findSportById(id);
-
-        String iconUrl =
-                azureBlobStorageService
-                        .uploadImage(
-                                file,
-                                "sports"
-                        );
-
-        sport.setIconUrl(iconUrl);
-
-        Sport updatedSport =
-                sportRepository
-                        .saveAndFlush(sport);
+        Sport updatedSport = sportRepository.saveAndFlush(sport);
 
         return toResponse(updatedSport);
-        }
+    }
+
+    // =========================
+    // DELETE
+    // =========================
+    @Transactional
+    public void deleteSport(Long id) {
+        Sport sport = findSportById(id);
+        sportRepository.delete(sport);
+    }
+
+    // =========================
+    // FIND ENTITY
+    // =========================
+    private Sport findSportById(Long id) {
+        return sportRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy môn thể thao có id = " + id));
+    }
+
+    // =========================
+    // ENTITY -> RESPONSE DTO
+    // =========================
+    private SportResponse toResponse(Sport sport) {
+        return new SportResponse(
+                sport.getId(),
+                sport.getName(),
+                sport.getDescription(),
+                sport.getIconUrl(),
+                sport.getStatus(),
+                sport.getCreatedAt(),
+                sport.getUpdatedAt()
+        );
+    }
+
+    @Transactional
+    public SportResponse updateIcon(Long id, MultipartFile file) {
+        Sport sport = findSportById(id);
+        String iconUrl = azureBlobStorageService.uploadImage(file, "sports");
+
+        sport.setIconUrl(iconUrl);
+        Sport updatedSport = sportRepository.saveAndFlush(sport);
+
+        return toResponse(updatedSport);
+    }
 }
