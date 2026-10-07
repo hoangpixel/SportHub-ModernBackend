@@ -15,7 +15,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
-    boolean existsByProfile(UserProfile profile); 
+    boolean existsByProfile(UserProfile profile);
 
     Optional<User> findByUsername(String username);
 
@@ -38,4 +38,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
         "userRoles.role"
     })
     Optional<User> findWithRolesById(Long id);
+
+    Optional<User> findByUsernameOrEmail(
+            String username,
+            String email
+    );
 }

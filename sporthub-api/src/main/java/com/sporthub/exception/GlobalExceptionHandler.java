@@ -191,4 +191,16 @@ public class GlobalExceptionHandler {
                         "Đã xảy ra lỗi hệ thống"
                 ));
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(
+            IllegalStateException ex) {
+
+        return ResponseEntity
+                .badRequest()
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        ex.getMessage()
+                ));
+    }
 }
