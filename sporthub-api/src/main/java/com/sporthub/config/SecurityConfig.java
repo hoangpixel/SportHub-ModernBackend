@@ -87,6 +87,12 @@ public class SecurityConfig {
                                 "/api/sports/**"
                         ).permitAll()
 
+                        // Review GET public
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/reviews/court/**"
+                                ).permitAll()
+
                         .anyRequest().authenticated()
                 )
 

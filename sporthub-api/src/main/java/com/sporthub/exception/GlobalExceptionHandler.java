@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 
 import com.sporthub.dto.response.ErrorResponse;
 
@@ -192,4 +193,16 @@ public class GlobalExceptionHandler {
                         "Đã xảy ra lỗi hệ thống"
                 ));
     }
+
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleMissingAuthentication(
+                AuthenticationCredentialsNotFoundException ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                        HttpStatus.UNAUTHORIZED.value(),
+                        "Bạn chưa đăng nhập"
+                ));
+        }
 }
