@@ -1,12 +1,12 @@
 package com.sporthub;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 @SpringBootApplication
 public class SporthubApiApplication {
-
 	public static void main(String[] args) {
 		Dotenv dotenv = Dotenv.configure()
 				.ignoreIfMalformed()
@@ -17,8 +17,8 @@ public class SporthubApiApplication {
 				System.setProperty(entry.getKey(), entry.getValue());
 			}
 		});
-
 		SpringApplication.run(SporthubApiApplication.class, args);
 	}
-
 }
+
+
