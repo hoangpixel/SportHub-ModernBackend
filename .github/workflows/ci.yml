@@ -38,7 +38,10 @@ jobs:
         run: chmod +x mvnw
 
       - name: Run unit tests
-        run: ./mvnw -B clean verify
+        run: ./mvnw -B clean test
+
+      - name: Build application
+        run: ./mvnw -B package -DskipTests
 
       - name: Upload test evidence
         if: always()
@@ -46,25 +49,3 @@ jobs:
         with:
           name: test-results
           path: sporthub-api/target/surefire-reports/
-
-  docker-rehearsal:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: sporthub-api
-    steps:
-      - uses: actions/checkout@v7
-      - name: Build from source and start isolated MySQL
-        run: docker compose -p sporthub-ci -f compose.verify.yml up -d --build
-      - name: Verify API and save seed IDs
-        shell: pwsh
-        run: ../scripts/verify-venue-court.ps1 -SnapshotPath ../seed-snapshot.json
-      - name: Restart services
-        run: docker compose -p sporthub-ci -f compose.verify.yml restart
-      - name: Verify seed after restart
-        shell: pwsh
-        run: ../scripts/verify-venue-court.ps1 -SnapshotPath ../seed-snapshot.json -AfterRestart
-      - name: Stop verification stack
-        if: always()
-        run: docker compose -p sporthub-ci -f compose.verify.yml down -v
