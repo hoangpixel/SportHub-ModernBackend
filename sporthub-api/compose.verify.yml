@@ -1,0 +1,31 @@
+# Isolated demo verification. No host MySQL port and no production credentials.
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: local-verification-only
+      MYSQL_DATABASE: sporthub_j2ee
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysql --protocol=TCP -h 127.0.0.1 -uroot -D sporthub_j2ee -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - verify_mysql:/var/lib/mysql
+  backend:
+    build: .
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/sporthub_j2ee?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      DB_USERNAME: root
+      DB_PASSWORD: local-verification-only
+      JWT_SECRET: dmVyaWZpY2F0aW9uLW9ubHktbm90LWZvci1wcm9kdWN0aW9uLXNlY3JldA==
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
+      AZURE_STORAGE_CONTAINER: ${AZURE_STORAGE_CONTAINER:-sporthub-verification}
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "127.0.0.1:${VERIFY_PORT:-18080}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+volumes:
+  verify_mysql:

@@ -632,3 +632,7 @@ Login with a seeded demo account and use the returned JWT for protected APIs.
 ## License
 
 This repository is currently maintained as an academic project. Add a formal license file if the project is later distributed publicly under a specific open-source license.
+
+## Module Venue Court của Huy
+
+[Báo cáo và API](docs/venue-court/README.md) · [Minh chứng kiểm thử](docs/venue-court/evidence.md)
