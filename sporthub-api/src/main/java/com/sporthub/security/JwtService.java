@@ -25,36 +25,21 @@ public class JwtService {
     // ==============================
     // TẠO JWT
     // ==============================
-        public String generateToken(
-                UserDetails userDetails,
-                Long userId) {
-
+    public String generateToken(UserDetails userDetails, Long userId) {
         Date now = new Date();
+        Date expiration = new Date(now.getTime() + jwtExpiration);
 
-        Date expiration =
-                new Date(
-                        now.getTime() + jwtExpiration
-                );
+        List<String> authorities = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
 
-        List<String> authorities =
-                userDetails.getAuthorities()
-                        .stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .toList();
+        List<String> roles = authorities.stream()
+                .filter(a -> a.startsWith("ROLE_"))
+                .toList();
 
-        List<String> roles =
-                authorities.stream()
-                        .filter(a ->
-                                a.startsWith("ROLE_")
-                        )
-                        .toList();
-
-        List<String> permissions =
-                authorities.stream()
-                        .filter(a ->
-                                !a.startsWith("ROLE_")
-                        )
-                        .toList();
+        List<String> permissions = authorities.stream()
+                .filter(a -> !a.startsWith("ROLE_"))
+                .toList();
 
         return Jwts.builder()
                 .subject(userDetails.getUsername())
@@ -65,46 +50,34 @@ public class JwtService {
                 .expiration(expiration)
                 .signWith(getSigningKey())
                 .compact();
-        }
+    }
 
     // ==============================
     // LẤY USERNAME TỪ JWT
     // ==============================
     public String extractUsername(String token) {
-        return extractAllClaims(token)
-                .getSubject();
+        return extractAllClaims(token).getSubject();
     }
 
     // ==============================
     // KIỂM TRA TOKEN
     // ==============================
-    public boolean isTokenValid(
-            String token,
-            UserDetails userDetails) {
-
-        String username =
-                extractUsername(token);
-
-        return username.equals(
-                userDetails.getUsername()
-        ) && !isTokenExpired(token);
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        String username = extractUsername(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
     // ==============================
     // KIỂM TRA HẾT HẠN
     // ==============================
     private boolean isTokenExpired(String token) {
-
-        return extractAllClaims(token)
-                .getExpiration()
-                .before(new Date());
+        return extractAllClaims(token).getExpiration().before(new Date());
     }
 
     // ==============================
     // ĐỌC CLAIMS
     // ==============================
     private Claims extractAllClaims(String token) {
-
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
@@ -116,10 +89,7 @@ public class JwtService {
     // SECRET KEY
     // ==============================
     private SecretKey getSigningKey() {
-
-        byte[] keyBytes =
-                Decoders.BASE64.decode(jwtSecret);
-
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

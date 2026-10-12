@@ -1,27 +1,23 @@
 package com.sporthub.exception;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+import com.sporthub.dto.response.ErrorResponse;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 
-import com.sporthub.dto.response.ErrorResponse;
-
-import jakarta.validation.ConstraintViolationException;
-import lombok.extern.slf4j.Slf4j;
-
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
@@ -63,12 +59,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new LinkedHashMap<>();
 
-        ex.getBindingResult()
-                .getFieldErrors()
-                .forEach(error -> errors.put(
-                        error.getField(),
-                        error.getDefaultMessage()
-                ));
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                errors.put(error.getField(), error.getDefaultMessage())
+        );
 
         return ResponseEntity
                 .badRequest()
@@ -138,7 +131,7 @@ public class GlobalExceptionHandler {
                         HttpStatus.FORBIDDEN.value(),
                         "Bạn không có quyền thực hiện chức năng này"
                 ));
-     }
+    }
 
     // =========================
     // 404

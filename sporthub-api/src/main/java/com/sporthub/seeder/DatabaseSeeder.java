@@ -16,11 +16,8 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-
         roleSeeder.seed();
-
         permissionSeeder.seed();
-
         developmentSeeder.seed();
     }
 }

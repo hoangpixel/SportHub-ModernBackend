@@ -23,21 +23,15 @@ public class PermissionSeeder {
     private final RolePermissionRepository rolePermissionRepository;
 
     public void seed() {
-
         // 1. Tạo toàn bộ permission
         for (String permissionCode : Permissions.ALL) {
             createPermissionIfNotExists(permissionCode);
         }
 
         // 2. Lấy role
-        Role userRole = roleRepository.findByName(Roles.USER)
-                .orElseThrow();
-
-        Role ownerRole = roleRepository.findByName(Roles.OWNER)
-                .orElseThrow();
-
-        Role adminRole = roleRepository.findByName(Roles.ADMIN)
-                .orElseThrow();
+        Role userRole = roleRepository.findByName(Roles.USER).orElseThrow();
+        Role ownerRole = roleRepository.findByName(Roles.OWNER).orElseThrow();
+        Role adminRole = roleRepository.findByName(Roles.ADMIN).orElseThrow();
 
         // 3. USER permissions
         List<String> userPermissions = List.of(
@@ -55,7 +49,6 @@ public class PermissionSeeder {
                 Permissions.CREATE_TEAM,
                 Permissions.REGISTER_TOURNAMENT,
                 Permissions.CREATE_REVIEW,
-
                 Permissions.CREATE_VENUE,
                 Permissions.UPDATE_OWN_VENUE,
                 Permissions.MANAGE_OWN_COURTS,
@@ -72,7 +65,6 @@ public class PermissionSeeder {
     }
 
     private void createPermissionIfNotExists(String code) {
-
         if (permissionRepository.existsByCode(code)) {
             return;
         }
@@ -84,37 +76,17 @@ public class PermissionSeeder {
         permissionRepository.save(permission);
     }
 
-    private void assignPermissions(
-            Role role,
-            List<String> permissionCodes) {
-
+    private void assignPermissions(Role role, List<String> permissionCodes) {
         for (String code : permissionCodes) {
+            Permission permission = permissionRepository.findByCode(code).orElseThrow();
 
-            Permission permission =
-                    permissionRepository.findByCode(code)
-                            .orElseThrow();
-
-            boolean exists =
-                    rolePermissionRepository
-                            .existsByRole_IdAndPermission_Id(
-                                    role.getId(),
-                                    permission.getId()
-                            );
-
+            boolean exists = rolePermissionRepository.existsByRole_IdAndPermission_Id(role.getId(), permission.getId());
             if (exists) {
                 continue;
             }
 
-            RolePermission rolePermission =
-                    new RolePermission();
-
-            rolePermission.setId(
-                    new RolePermissionId(
-                            role.getId(),
-                            permission.getId()
-                    )
-            );
-
+            RolePermission rolePermission = new RolePermission();
+            rolePermission.setId(new RolePermissionId(role.getId(), permission.getId()));
             rolePermission.setRole(role);
             rolePermission.setPermission(permission);
 

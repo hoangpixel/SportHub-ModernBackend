@@ -9,8 +9,16 @@ public final class Permissions {
 
     // USER / ADMIN USER MANAGEMENT
     public static final String VIEW_USERS = "VIEW_USERS";
+    public static final String CREATE_USER = "CREATE_USER";
+    public static final String UPDATE_USER = "UPDATE_USER";
+    public static final String DELETE_USER = "DELETE_USER";
     public static final String UPDATE_USER_STATUS = "UPDATE_USER_STATUS";
     public static final String UPDATE_USER_ROLES = "UPDATE_USER_ROLES";
+
+    // ROLE / PERMISSION
+    public static final String VIEW_ROLES = "VIEW_ROLES";
+    public static final String VIEW_PERMISSIONS = "VIEW_PERMISSIONS";
+    public static final String MANAGE_ROLE_PERMISSIONS = "MANAGE_ROLE_PERMISSIONS";
 
     // SPORT
     public static final String CREATE_SPORT = "CREATE_SPORT";
@@ -42,8 +50,15 @@ public final class Permissions {
 
     public static final List<String> ALL = List.of(
             VIEW_USERS,
+            CREATE_USER,
+            UPDATE_USER,
+            DELETE_USER,
             UPDATE_USER_STATUS,
             UPDATE_USER_ROLES,
+
+            VIEW_ROLES,
+            VIEW_PERMISSIONS,
+            MANAGE_ROLE_PERMISSIONS,
 
             CREATE_SPORT,
             UPDATE_SPORT,

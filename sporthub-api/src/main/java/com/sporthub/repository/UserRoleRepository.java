@@ -6,14 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface UserRoleRepository
-        extends JpaRepository<UserRole, UserRoleId> {
+public interface UserRoleRepository extends JpaRepository<UserRole, UserRoleId> {
 
     List<UserRole> findByUser_Id(Long userId);
 
-    boolean existsByUser_IdAndRole_Id(
-            Long userId,
-            Long roleId
-    );
-        void deleteByUser_Id(Long userId);
+    boolean existsByUser_IdAndRole_Id(Long userId, Long roleId);
+
+    void deleteByUser_Id(Long userId);
+
+    long countByRole_Id(Long roleId);
 }

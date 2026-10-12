@@ -1,15 +1,14 @@
 package com.sporthub.config;
 
+import com.sporthub.dto.response.ErrorResponse;
 import com.sporthub.security.CustomUserDetailsService;
 import com.sporthub.security.JwtAuthenticationFilter;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -22,14 +21,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import tools.jackson.databind.ObjectMapper;
-import com.sporthub.dto.response.ErrorResponse;
 
 import java.nio.charset.StandardCharsets;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
@@ -61,25 +56,20 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/error"
                         ).permitAll()
-
                         // Swagger / OpenAPI
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
-
                         // Sport GET public
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -93,9 +83,18 @@ public class SecurityConfig {
                                 "/api/reviews/court/**"
                                 ).permitAll()
 
+                        // Actuator health public
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/actuator/health/**"
+                        ).permitAll()
+                        // Actuator metrics only ADMIN
+                        .requestMatchers(
+                                "/actuator/metrics",
+                                "/actuator/metrics/**"
+                        ).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, ex) -> {
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
@@ -110,7 +109,6 @@ public class SecurityConfig {
                                     )
                             );
                         })
-
                         .accessDeniedHandler((request, response, ex) -> {
                             response.setStatus(HttpStatus.FORBIDDEN.value());
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -125,11 +123,7 @@ public class SecurityConfig {
                             );
                         })
                 )
-
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                );
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -137,30 +131,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173"
-        ));
-
-        configuration.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "PATCH",
-                "DELETE",
-                "OPTIONS"
-        ));
-
-        configuration.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type"
-        ));
-
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(false);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 
         return source;
