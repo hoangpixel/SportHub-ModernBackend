@@ -78,6 +78,13 @@ public class SecurityConfig {
                                 "/api/venues", "/api/venues/**",
                                 "/api/courts", "/api/courts/**"
                         ).permitAll()
+
+                        // Review GET public
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/reviews/court/**"
+                                ).permitAll()
+
                         // Actuator health public
                         .requestMatchers(
                                 "/actuator/health",
