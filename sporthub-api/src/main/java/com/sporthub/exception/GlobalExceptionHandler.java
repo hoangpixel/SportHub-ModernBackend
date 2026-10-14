@@ -12,9 +12,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,6 +22,12 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidParameter(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(400,
+                "Tham số không hợp lệ: " + ex.getName()));
+    }
 
     // =========================
     // 401 - LOGIN SAI
@@ -187,15 +193,15 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
-        public ResponseEntity<ErrorResponse> handleMissingAuthentication(
-                AuthenticationCredentialsNotFoundException ex) {
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(
+            IllegalStateException ex) {
 
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
+                .badRequest()
                 .body(new ErrorResponse(
-                        HttpStatus.UNAUTHORIZED.value(),
-                        "Bạn chưa đăng nhập"
+                        HttpStatus.BAD_REQUEST.value(),
+                        ex.getMessage()
                 ));
-        }
+    }
 }
