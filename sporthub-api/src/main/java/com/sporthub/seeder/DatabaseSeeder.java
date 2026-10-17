@@ -2,10 +2,12 @@ package com.sporthub.seeder;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@Profile("!prod")
 @RequiredArgsConstructor
 public class DatabaseSeeder implements CommandLineRunner {
 
