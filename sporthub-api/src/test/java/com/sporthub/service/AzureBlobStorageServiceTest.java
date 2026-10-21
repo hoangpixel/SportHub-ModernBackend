@@ -121,4 +121,24 @@ public class AzureBlobStorageServiceTest {
         verify(blobContainerClient).getBlobClient(anyString());
         verify(blobClient, never()).setHttpHeaders(any());
     }
+
+    @Test
+    void upload_image_azure_sdk_failure_shouldThrowException() {
+        MultipartFile file = new MockMultipartFile(
+                "file", "sport.png", "image/png", "image".getBytes()
+        );
+
+        when(blobContainerClient.getBlobClient(anyString())).thenReturn(blobClient);
+
+        doThrow(new RuntimeException("Simulated Azure SDK failure"))
+                .when(blobClient)
+                .upload(any(InputStream.class), eq(file.getSize()), eq(true));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> azureBlobStorageService.uploadImage(file, "sports"));
+
+        assertEquals("Simulated Azure SDK failure", exception.getMessage());
+        verify(blobClient, never()).setHttpHeaders(any());
+        verify(blobClient, never()).getBlobUrl();
+    }
 }

@@ -318,4 +318,22 @@ public class SportServiceTest {
 
         assertEquals(1, response.getContent().size());
     }
+
+    @Test
+    void update_icon_azure_failure_should_keep_old_icon() {
+        Long id = 1L;
+        Sport sport = createSport();
+        MultipartFile file = new MockMultipartFile(
+                "file", "new-icon.png", "image/png", "image".getBytes()
+        );
+
+        when(sportRepository.findById(id)).thenReturn(Optional.of(sport));
+        when(azureBlobStorageService.uploadImage(file, "sports"))
+                .thenThrow(new RuntimeException("Simulated Azure failure"));
+
+        assertThrows(RuntimeException.class, () -> sportService.updateIcon(id, file));
+
+        assertEquals("old-icon", sport.getIconUrl());
+        verify(sportRepository, never()).saveAndFlush(any(Sport.class));
+    }
 }
