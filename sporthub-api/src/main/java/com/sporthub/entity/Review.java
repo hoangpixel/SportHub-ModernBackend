@@ -24,6 +24,10 @@ public class Review {
     @Column(name = "court_id", nullable = false)
     private Long courtId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "court_id", insertable = false, updatable = false)
+    private Court court;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;

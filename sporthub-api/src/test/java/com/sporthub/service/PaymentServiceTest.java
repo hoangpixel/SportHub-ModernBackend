@@ -40,6 +40,9 @@ class PaymentServiceTest {
     @Mock
     private BookingRepository bookingRepository;
 
+    @Mock
+    private com.sporthub.repository.CourtRepository courtRepository;
+
     @InjectMocks
     private PaymentService paymentService;
 
@@ -49,7 +52,15 @@ class PaymentServiceTest {
     void setUp() {
         booking = new Booking();
         booking.setId(1L);
+        booking.setCourtId(1L);
+        lenient().when(bookingRepository.findCourtIdForPayment(1L)).thenReturn(Optional.of(1L));
+        booking.setExpiresAt(BookingTime.now().plusMinutes(10));
+        com.sporthub.entity.Court court = new com.sporthub.entity.Court();
+        court.setVenue(new com.sporthub.entity.Venue());
+        lenient().when(courtRepository.findByIdForBooking(1L)).thenReturn(Optional.of(court));
         booking.setStatus(BookingStatus.PENDING);
+        booking.setBookingDate(java.time.LocalDate.now().plusDays(1));
+        booking.setStartTime(java.time.LocalTime.of(8, 0));
         booking.setTotalAmount(BigDecimal.valueOf(200000));
         User user = new User();
         user.setId(1L);
@@ -76,7 +87,7 @@ class PaymentServiceTest {
         request.setBookingId(1L);
         request.setPaymentMethod("VNPAY");
 
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(booking));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> {
             Payment p = invocation.getArgument(0);
             p.setId(10L);
@@ -102,7 +113,7 @@ class PaymentServiceTest {
         request.setBookingId(999L);
         request.setPaymentMethod("VNPAY");
 
-        when(bookingRepository.findById(999L)).thenReturn(Optional.empty());
+        when(bookingRepository.findCourtIdForPayment(999L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> paymentService.createPayment(request));
     }
@@ -115,7 +126,7 @@ class PaymentServiceTest {
 
         booking.getUser().setUsername("other-user");
 
-        when(bookingRepository.findById(1L))
+        when(bookingRepository.findByIdForUpdate(1L))
                 .thenReturn(Optional.of(booking));
 
         assertThrows(

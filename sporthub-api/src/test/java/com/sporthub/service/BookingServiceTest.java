@@ -3,6 +3,11 @@ package com.sporthub.service;
 import com.sporthub.dto.request.CreateBookingRequest;
 import com.sporthub.dto.response.BookingResponse;
 import com.sporthub.entity.Booking;
+import com.sporthub.entity.Court;
+import com.sporthub.entity.Venue;
+import com.sporthub.repository.CourtRepository;
+import com.sporthub.repository.CourtScheduleRepository;
+import com.sporthub.repository.PaymentRepository;
 import com.sporthub.entity.User;
 import com.sporthub.enums.BookingStatus;
 import com.sporthub.exception.ConflictException;
@@ -34,6 +39,9 @@ class BookingServiceTest {
 
     @Mock private BookingRepository bookingRepository;
     @Mock private UserRepository userRepository;
+    @Mock private CourtRepository courtRepository;
+    @Mock private CourtScheduleRepository courtScheduleRepository;
+    @Mock private PaymentRepository paymentRepository;
     @Mock private SecurityContext securityContext;
     @Mock private Authentication authentication;
 
@@ -41,10 +49,17 @@ class BookingServiceTest {
 
     @BeforeEach
     void setUp() {
-        bookingService = new BookingService(bookingRepository, userRepository);
+        bookingService = new BookingService(bookingRepository, userRepository, courtRepository, courtScheduleRepository, paymentRepository);
         SecurityContextHolder.setContext(securityContext);
         lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
         lenient().when(authentication.getName()).thenReturn("user01");
+        Court court = new Court();
+        court.setId(1L);
+        court.setVenue(new Venue());
+        court.setPricePerHour(new BigDecimal("100000"));
+        court.setOpenTime(LocalTime.of(6, 0));
+        court.setCloseTime(LocalTime.of(22, 0));
+        lenient().when(courtRepository.findByIdForBooking(1L)).thenReturn(Optional.of(court));
     }
 
     // TẠO BOOKING THÀNH CÔNG
@@ -55,7 +70,7 @@ class BookingServiceTest {
         User user = createUser();
 
         when(userRepository.findByUsername("user01")).thenReturn(Optional.of(user));
-        when(bookingRepository.existsOverlapping(any(), any(), any(), any())).thenReturn(false);
+        when(bookingRepository.existsActiveOverlap(any(), any(), any(), any(), any())).thenReturn(false);
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking b = invocation.getArgument(0);
             b.setId(1L);
@@ -80,11 +95,12 @@ class BookingServiceTest {
         User user = createUser();
 
         when(userRepository.findByUsername("user01")).thenReturn(Optional.of(user));
-        when(bookingRepository.existsOverlapping(
-                request.getCourtId(),
-                request.getBookingDate(),
-                request.getStartTime(),
-                request.getEndTime()
+        when(bookingRepository.existsActiveOverlap(
+                org.mockito.ArgumentMatchers.eq(request.getCourtId()),
+                org.mockito.ArgumentMatchers.eq(request.getBookingDate()),
+                org.mockito.ArgumentMatchers.eq(request.getStartTime()),
+                org.mockito.ArgumentMatchers.eq(request.getEndTime()),
+                any()
         )).thenReturn(true);
 
         // Act & Assert
@@ -118,7 +134,7 @@ class BookingServiceTest {
         User user = createUser();
         when(userRepository.findByUsername("user01")).thenReturn(Optional.of(user));
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(ConflictException.class,
                 () -> bookingService.createBooking(request));
     }
 
@@ -126,7 +142,7 @@ class BookingServiceTest {
     @Test
     void cancelBooking_success() {
         Booking booking = createBooking(BookingStatus.PENDING);
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(booking));
         when(bookingRepository.saveAndFlush(any())).thenReturn(booking);
 
         BookingResponse response = bookingService.cancelBooking(1L);
@@ -138,9 +154,9 @@ class BookingServiceTest {
     @Test
     void cancelBooking_alreadyCompleted_shouldThrowException() {
         Booking booking = createBooking(BookingStatus.COMPLETED);
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(booking));
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(ConflictException.class,
                 () -> bookingService.cancelBooking(1L));
     }
 
@@ -181,6 +197,7 @@ class BookingServiceTest {
         booking.setStartTime(LocalTime.of(8, 0));
         booking.setEndTime(LocalTime.of(10, 0));
         booking.setStatus(status);
+        booking.setExpiresAt(BookingTime.now().plusMinutes(10));
         return booking;
     }
 
@@ -193,11 +210,12 @@ class BookingServiceTest {
         when(userRepository.findByUsername("user01"))
                 .thenReturn(Optional.of(createUser()));
 
-        when(bookingRepository.existsOverlapping(
-                request.getCourtId(),
-                request.getBookingDate(),
-                request.getStartTime(),
-                request.getEndTime()
+        when(bookingRepository.existsActiveOverlap(
+                org.mockito.ArgumentMatchers.eq(request.getCourtId()),
+                org.mockito.ArgumentMatchers.eq(request.getBookingDate()),
+                org.mockito.ArgumentMatchers.eq(request.getStartTime()),
+                org.mockito.ArgumentMatchers.eq(request.getEndTime()),
+                any()
         )).thenReturn(false);
 
         when(bookingRepository.save(any(Booking.class)))

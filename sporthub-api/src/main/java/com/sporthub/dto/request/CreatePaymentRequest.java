@@ -1,6 +1,7 @@
 package com.sporthub.dto.request;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,6 +13,6 @@ public class CreatePaymentRequest {
     @Positive
     private Long bookingId;
 
-    @NotNull(message = "Phương thức thanh toán không được để trống")
+    @NotBlank(message = "Phương thức thanh toán không được để trống")
     private String paymentMethod;
 }

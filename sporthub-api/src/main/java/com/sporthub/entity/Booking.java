@@ -31,6 +31,10 @@ public class Booking {
     @Column(name = "court_id", nullable = false)
     private Long courtId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "court_id", insertable = false, updatable = false)
+    private Court court;
+
     @Column(name = "booking_code", nullable = false, unique = true, length = 50)
     private String bookingCode;
 
@@ -52,6 +56,22 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private BookingStatus status = BookingStatus.PENDING;
+
+    private LocalDateTime expiresAt;
+
+    @Column(length = 500)
+    private String cancellationReason;
+
+    private LocalDateTime cancelledAt;
+
+    private String cancelledBy;
+
+    @Column(length = 500)
+    private String outcomeReason;
+
+    private String resolvedBy;
+
+    private LocalDateTime resolvedAt;
 
     @Column(length = 500)
     private String note;
