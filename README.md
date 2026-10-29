@@ -37,7 +37,7 @@ Mã nguồn Spring Boot nằm tại thư mục `sporthub-api/`.
 
 | Profile | Mục đích | Database / quản lý schema |
 |---|---|---|
-| `dev` (mặc định) | Phát triển và demo | MySQL, Hibernate `ddl-auto=update`, Flyway tắt |
+| `dev` (mặc định) | Phát triển và demo | MySQL, Hibernate `ddl-auto=validate`, Flyway bật |
 | `test` | Một số bài kiểm thử tự động | H2 in-memory, `create-drop`, Flyway tắt |
 | `flyway` | Thử nghiệm migration | MySQL riêng, Flyway bật, Hibernate `validate` |
 | `prod` | Minh họa cấu hình triển khai | MySQL qua biến môi trường, Flyway bật, Hibernate `validate`, không chạy `DatabaseSeeder` |
@@ -159,7 +159,7 @@ Sau khi README và code Booking được merge, cập nhật mốc SHA/CI mới 
 ## 9. Giới hạn và định hướng tiếp theo
 
 - Việc chạy CI xanh không chứng minh sẵn mọi luồng nghiệp vụ trên MySQL. Cần lưu log MySQL riêng cho Booking cạnh tranh, transaction rollback và Flyway V3.
-- `dev` vẫn đang dùng `ddl-auto=update`, trong khi `flyway` và `prod` dùng Flyway với `validate`.
+- Các profile `dev`, `flyway` và `prod` sử dụng Hibernate `ddl-auto=validate` kết hợp Flyway Migration để quản lý cấu trúc cơ sở dữ liệu. Môi trường kiểm thử H2 sử dụng cấu hình riêng với `ddl-auto=create-drop` và Flyway được tắt.
 - Việc khởi tạo Role/Permission trên profile `prod` cần hoàn thiện trước triển khai thực tế.
 - Các thanh toán hiện tại là **mô phỏng trạng thái**, không có bằng chứng xử lý giao dịch hoặc hoàn tiền qua cổng thanh toán thật.
 
