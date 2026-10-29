@@ -48,12 +48,6 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.cancelBooking(id));
     }
 
-    @PatchMapping("/{id}/confirm")
-    @PreAuthorize("hasAuthority('VIEW_OWNER_BOOKINGS')")
-    public ResponseEntity<BookingResponse> confirmBooking(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.confirmBooking(id));
-    }
-
     @PatchMapping("/{id}/complete")
     @PreAuthorize("hasAuthority('VIEW_OWNER_BOOKINGS')")
     public ResponseEntity<BookingResponse> completeBooking(@PathVariable Long id) {

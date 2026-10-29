@@ -3,6 +3,7 @@ package com.sporthub.service;
 import com.sporthub.dto.request.CreatePaymentRequest;
 import com.sporthub.dto.response.PaymentResponse;
 import com.sporthub.entity.Booking;
+import com.sporthub.entity.Court;
 import com.sporthub.entity.Payment;
 import com.sporthub.enums.BookingStatus;
 import com.sporthub.enums.PaymentMethod;
@@ -10,6 +11,7 @@ import com.sporthub.enums.PaymentStatus;
 import com.sporthub.exception.ConflictException;
 import com.sporthub.exception.ResourceNotFoundException;
 import com.sporthub.repository.BookingRepository;
+import com.sporthub.repository.CourtRepository;
 import com.sporthub.repository.PaymentRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -24,7 +26,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder; 
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.UUID;
+import com.sporthub.enums.CourtStatus;
+import com.sporthub.enums.VenueStatus;
 
 @Slf4j
 @Service
@@ -34,25 +39,42 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
 
-    @Transactional
+    private final CourtRepository courtRepository;
+
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public PaymentResponse createPayment(CreatePaymentRequest request) {
-        Booking booking = bookingRepository.findById(request.getBookingId())
+        Long courtId = bookingRepository.findCourtIdForPayment(request.getBookingId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy booking"));
+        Court court = courtRepository.findByIdForBooking(courtId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân"));
+        Booking booking = bookingRepository.findByIdForUpdate(request.getBookingId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy booking có id = " + request.getBookingId()));
-                        checkBookingOwnership(booking);
+        checkBookingOwnership(booking);
 
-        if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new ConflictException(
-                    "Chỉ có thể thanh toán booking đang PENDING");
+        if (booking.getStatus() != BookingStatus.PENDING || BookingTime.expired(booking, BookingTime.now())) {
+            throw new ConflictException("Chỉ có thể thanh toán booking PENDING còn hạn giữ chỗ");
+        }
+        if (court.getStatus() != CourtStatus.ACTIVE
+                || court.getVenue().getStatus() != VenueStatus.ACTIVE) {
+            throw new ConflictException("Sân hoặc cơ sở hiện không hoạt động");
         }
 
         if (paymentRepository.existsByBookingId(booking.getId())) {
             throw new ConflictException("Booking này đã được thanh toán");
         }
 
+        LocalDateTime startAt = LocalDateTime.of(booking.getBookingDate(), booking.getStartTime());
+        if (!startAt.isAfter(BookingTime.now())) {
+            throw new ConflictException("Đã quá thời hạn thanh toán trước giờ bắt đầu");
+        }
+        if (request.getPaymentMethod() == null || request.getPaymentMethod().isBlank()) {
+            throw new IllegalArgumentException("Phương thức thanh toán không được để trống");
+        }
+
         PaymentMethod method;
         try {
-            method = PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
+            method = PaymentMethod.valueOf(request.getPaymentMethod().trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Phương thức thanh toán không hợp lệ");
         }
@@ -60,10 +82,10 @@ public class PaymentService {
         Payment payment = new Payment();
         payment.setBooking(booking);
         payment.setPaymentMethod(method);
-        payment.setTransactionCode("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        payment.setTransactionCode("TXN-" + UUID.randomUUID());
         payment.setAmount(booking.getTotalAmount());
         payment.setStatus(PaymentStatus.COMPLETED);
-        payment.setPaidAt(LocalDateTime.now());
+        payment.setPaidAt(BookingTime.now());
 
         paymentRepository.save(payment);
 

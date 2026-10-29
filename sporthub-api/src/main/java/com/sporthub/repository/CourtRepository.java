@@ -1,6 +1,8 @@
 package com.sporthub.repository;
 
 import com.sporthub.entity.Court;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +14,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public interface CourtRepository extends JpaRepository<Court, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Court c WHERE c.id = :id")
+    java.util.Optional<Court> findByIdForBooking(@Param("id") Long id);
 
     java.util.Optional<Court> findByNameIgnoreCaseAndVenue_Id(String name, Long venueId);
 

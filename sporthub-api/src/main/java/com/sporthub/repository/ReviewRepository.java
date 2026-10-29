@@ -1,6 +1,7 @@
 package com.sporthub.repository;
 
 import com.sporthub.entity.Review;
+import com.sporthub.enums.ReviewStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,6 +15,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     boolean existsByBookingId(Long bookingId);
 
     Page<Review> findByCourtId(Long courtId, Pageable pageable);
+
+    Page<Review> findByCourtIdAndStatus(Long courtId, ReviewStatus status, Pageable pageable);
 
     Page<Review> findByUserId(Long userId, Pageable pageable);
 

@@ -70,7 +70,7 @@ class ReviewServiceTest {
         request.setComment("Sân tuyệt vời!");
 
         when(userRepository.findByUsername("user01")).thenReturn(Optional.of(user));
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(completedBooking));
+        when(bookingRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(completedBooking));
         when(reviewRepository.existsByBookingId(1L)).thenReturn(false);
 
         when(reviewRepository.save(any(Review.class))).thenAnswer(invocation -> {
@@ -93,7 +93,7 @@ class ReviewServiceTest {
         request.setBookingId(1L);
 
         when(userRepository.findByUsername("user01")).thenReturn(Optional.of(user));
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(completedBooking));
+        when(bookingRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(completedBooking));
         when(reviewRepository.existsByBookingId(1L)).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> reviewService.createReview(request));

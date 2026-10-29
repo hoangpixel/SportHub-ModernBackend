@@ -2,637 +2,171 @@
 
 [![SportHub CI](https://github.com/hoangpixel/SportHub-ModernBackend/actions/workflows/ci.yml/badge.svg)](https://github.com/hoangpixel/SportHub-ModernBackend/actions/workflows/ci.yml)
 
-SportHub Modern Backend is a Spring Boot REST API for a sports-platform backend. The current backend foundation focuses on authentication, user/role/permission management, sport management, secure file upload, consistent API validation/error handling, automated testing, Docker-based reproducibility, CI, and observability.
+Backend REST API minh họa cho đề tài **Tìm hiểu và ứng dụng Spring Boot trong xây dựng hệ thống quản lý thể thao SportHub**. Dự án tập trung vào kiến trúc phân tầng, Spring Data JPA, bảo mật JWT, quản lý cấu hình, Flyway Migration, kiểm thử tự động và tích hợp liên module.
 
-> Course context: **Modern Programming Technologies / Spring Boot backend project**  
-> Java **21** · Spring Boot **4.1.1** · MySQL · Spring Security · JWT · Spring Data JPA
+**Công nghệ:** Java 21 · Spring Boot 4.1.1 · Maven Wrapper · MySQL 8 · Spring Security/JWT · Spring Data JPA/Hibernate · JUnit 5/Mockito/Spring Test · Docker Compose · GitHub Actions · Azure Blob Storage.
 
----
+## 1. Kiến trúc và các module
 
-## 1. Main Goals
+Luồng tổng quát: `HTTP Request → Security Filter → Controller → Service → Repository → MySQL`.
 
-The project is built to demonstrate both backend implementation and engineering workflow:
-
-- IoC / Dependency Injection managed by Spring.
-- Layered REST architecture: Controller → Service → Repository.
-- Spring Data JPA / Hibernate for database access.
-- Spring Security + JWT authentication and authorization.
-- Bean Validation and global exception handling.
-- Docker / Docker Compose for reproducible execution.
-- Unit testing with JUnit 5 + Mockito.
-- Git branch / Pull Request workflow and GitHub Actions CI.
-- External file storage with Azure Blob Storage.
-- Observability with Spring Boot Actuator, Request ID, MDC logging, and AOP timing.
-
----
-
-## 2. Tech Stacks
-
-| Area | Technology |
+| Module | Phạm vi chính |
 |---|---|
-| Language | Java 21 |
-| Framework | Spring Boot 4.1.1 |
-| REST API | Spring Web MVC |
-| ORM | Spring Data JPA + Hibernate |
-| Database | MySQL |
-| Security | Spring Security + JWT (JJWT) |
-| Validation | Jakarta Bean Validation |
-| API documentation | Springdoc OpenAPI / Swagger UI |
-| File storage | Azure Blob Storage |
-| Observability | Spring Boot Actuator + MDC + AOP |
-| Testing | JUnit 5 + Mockito |
-| Build | Maven Wrapper |
-| Containerization | Docker + Docker Compose |
-| CI | GitHub Actions |
+| Authentication, User, Role, Permission | Đăng ký, đăng nhập, JWT, quản lý tài khoản và phân quyền |
+| Sport | Tra cứu môn thể thao, quản trị môn thể thao và ảnh |
+| Venue, Court, CourtSchedule | Quản lý cơ sở, sân, giờ hoạt động và tìm kiếm/phân trang |
+| Booking | Đặt sân trả trước, giữ chỗ, kiểm tra trùng lịch và vòng đời Booking |
+| Payment | Ghi nhận thanh toán mô phỏng, đối soát và trạng thái hoàn tiền |
+| Review | Đánh giá sau khi hoàn tất Booking, danh sách và điểm trung bình |
+| Team, Tournament, Match | Quản lý đội, giải đấu và trận đấu |
 
----
+Thành phần dùng chung gồm Spring Security, Global Exception Handling, Bean Validation, Spring Profiles, Actuator, Request ID/MDC, Spring AOP và Azure Blob Storage.
 
-## 3. Current Backend Features
+Xem chi tiết luồng Booking, các API và test tại [tài liệu Booking/Payment/Review](docs/booking-payment-review/README.md). Sơ đồ database đặt trong [`docs/database/`](docs/database/).
 
-### Authentication and authorization
+## 2. Yêu cầu môi trường
 
-- Register and login.
-- BCrypt password hashing.
-- Stateless JWT authentication.
-- Role and permission based authorization.
-- Method-level authorization with `@PreAuthorize`.
-- Disabled/inactive accounts are blocked from logging in.
-- Existing JWTs are also rejected after a user becomes inactive because the JWT filter reloads the current user state before creating the authentication context.
+- JDK 21, Git, Maven Wrapper có sẵn trong dự án.
+- MySQL 8 trở lên cho môi trường phát triển hoặc thử nghiệm migration.
+- Docker Desktop nếu chạy ứng dụng và MySQL qua Docker Compose.
+- Thông tin JWT, mật khẩu MySQL và Azure Storage trong biến môi trường, không commit thông tin bí mật.
 
-### User management
+Mã nguồn Spring Boot nằm tại thư mục `sporthub-api/`.
 
-- Get current user profile.
-- Partial profile update.
-- Change password.
-- Avatar upload through Azure Blob Storage.
-- Admin user listing with pagination.
-- Admin user status / role management.
-- Validation for request bodies, pagination parameters, and path variables.
+## 3. Cấu hình môi trường với Spring Profiles
 
-### Sport management
+| Profile | Mục đích | Database / quản lý schema |
+|---|---|---|
+| `dev` (mặc định) | Phát triển và demo | MySQL, Hibernate `ddl-auto=update`, Flyway tắt |
+| `test` | Một số bài kiểm thử tự động | H2 in-memory, `create-drop`, Flyway tắt |
+| `flyway` | Thử nghiệm migration | MySQL riêng, Flyway bật, Hibernate `validate` |
+| `prod` | Minh họa cấu hình triển khai | MySQL qua biến môi trường, Flyway bật, Hibernate `validate`, không chạy `DatabaseSeeder` |
 
-- Public sport listing and sport detail APIs.
-- Pagination and keyword filtering.
-- Admin sport CRUD operations.
-- Image upload integration with Azure Blob Storage.
+Cấu hình tương ứng nằm ở `src/main/resources/application*.properties` và `src/test/resources/application-test.properties`.
 
-### Error handling
+**Lưu ý:** Profile `prod` mới là cấu hình thực nghiệm, **chưa phải triển khai production hoàn chỉnh**. `DatabaseSeeder` sử dụng `@Profile("!prod")`, nên dữ liệu demo không được tự tạo, nhưng dữ liệu Role/Permission thiết yếu cũng cần phương án chuẩn bị riêng trước khi triển khai thật.
 
-The API uses a consistent error response format:
+### Biến môi trường
 
-```json
-{
-  "status": 400,
-  "message": "Dữ liệu không hợp lệ",
-  "errors": {
-    "page": "Page phải lớn hơn hoặc bằng 0"
-  }
-}
-```
+Đặt biến môi trường phù hợp với cách chạy, có thể dùng `.env` tại `sporthub-api/` nếu chạy bằng Docker Compose hoặc qua cơ chế nạp `.env` của ứng dụng.
 
-Handled cases include:
-
-- `400 Bad Request`
-- `401 Unauthorized`
-- `403 Forbidden`
-- `404 Not Found`
-- `409 Conflict`
-- `500 Internal Server Error`
-
-Unexpected exceptions are logged on the server while clients receive a generic error message instead of an internal stack trace.
-
----
-
-## 4. Security Notes
-
-The backend currently applies the following security controls:
-
-- Passwords are hashed with BCrypt.
-- JWT secret is provided through environment variables.
-- Azure credentials are not committed to source control.
-- Spring Data JPA is used instead of manually concatenating SQL queries.
-- CORS uses an allowlist instead of `*`.
-- Request validation is applied before business logic.
-- The application uses stateless authentication.
-- CSRF is disabled because the current API uses Bearer tokens in the `Authorization` header rather than server-side login sessions.
-- Public health information is intentionally minimal.
-- Actuator metrics are protected.
-- Client-provided Request IDs are validated before being added to logs.
-
-Current local CORS origin:
-
-```text
-http://localhost:5173
-```
-
----
-
-## 5. Project Structure
-
-```text
-SportHub-ModernBackend/
-└── sporthub-api/
-    ├── src/
-    │   ├── main/
-    │   │   ├── java/com/sporthub/
-    │   │   │   ├── aspect/
-    │   │   │   ├── config/
-    │   │   │   ├── constant/
-    │   │   │   ├── controller/
-    │   │   │   ├── dto/
-    │   │   │   ├── entity/
-    │   │   │   ├── enums/
-    │   │   │   ├── exception/
-    │   │   │   ├── repository/
-    │   │   │   ├── security/
-    │   │   │   ├── seeder/
-    │   │   │   └── service/
-    │   │   └── resources/
-    │   │       └── application.properties
-    │   └── test/
-    │       └── java/com/sporthub/
-    ├── .env.example
-    ├── Dockerfile
-    ├── docker-compose.yml
-    ├── mvnw
-    ├── mvnw.cmd
-    └── pom.xml
-```
-
-The exact package tree may grow as additional SportHub modules are integrated.
-
----
-
-## 6. Prerequisites
-
-### Local development
-
-Install:
-
-- JDK 21
-- Git
-- MySQL 8+ or a compatible MySQL server
-- Docker Desktop (recommended for the reproducible setup)
-
-Maven does **not** need to be installed globally because the project uses Maven Wrapper.
-
-### Optional external service
-
-Azure Blob Storage is required for real image upload functionality.
-
----
-
-## 7. Environment Variables
-
-Never commit real secrets to Git.
-
-The project expects the following environment variables:
-
-```env
-DB_URL=jdbc:mysql://localhost:3306/sporthub_j2ee?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+```dotenv
+DB_URL=jdbc:mysql://localhost:3306/sporthub?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
 DB_USERNAME=root
-DB_PASSWORD=your_database_password
-
-JWT_SECRET=your_secure_jwt_secret
-
-AZURE_STORAGE_CONNECTION_STRING=your_azure_storage_connection_string
+DB_PASSWORD=replace_with_local_password
+JWT_SECRET=replace_with_secure_secret
+JWT_EXPIRATION=86400000
+AZURE_STORAGE_CONNECTION_STRING=replace_with_azure_connection_string
 AZURE_STORAGE_CONTAINER=sporthub-images
 ```
 
-A safe template is provided in:
+Đây chỉ là **giá trị minh họa**. Không đưa mật khẩu hoặc connection string thật vào Git. File `sporthub-api/.env.example` có thể dùng làm danh sách tham khảo các biến cấu hình.
 
-```text
-sporthub-api/.env.example
-```
+## 4. Chạy ứng dụng
 
-`.env` and other local secret files must remain ignored by Git.
+### Cách A — MySQL cài tại máy
 
----
-
-## 8. Run Locally
-
-Move into the backend directory:
-
-```bash
-cd sporthub-api
-```
-
-Make sure the required environment variables are available and MySQL is running.
-
-### Linux / macOS / Git Bash
-
-```bash
-./mvnw spring-boot:run
-```
-
-### Windows PowerShell / CMD
+Chuẩn bị MySQL và database `sporthub`, cấu hình biến môi trường, sau đó chạy tại `sporthub-api/`:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-By default, the backend is available at:
+Mặc định sử dụng profile `dev`. Để chỉ định profile khi thực nghiệm:
 
-```text
-http://localhost:8080
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=flyway"
 ```
 
----
+Chỉ chạy profile `flyway` trên **database thử nghiệm được chọn đúng trong `application-flyway.properties`**, không chỉnh migration đã chạy trên dữ liệu quan trọng.
 
-## 9. Run with Docker Compose
+### Cách B — Docker Compose
 
-Docker Compose is the recommended reproducible setup because it starts both the backend and MySQL.
-
-From `sporthub-api`:
+Tại `sporthub-api/`, thiết lập các biến bắt buộc rồi chạy:
 
 ```bash
 docker compose up --build
 ```
 
-Expected services:
-
-- SportHub backend: `http://localhost:8080`
-- MySQL inside Docker network: port `3306`
-- MySQL exposed to the host by the Compose configuration: port `3307`
-
-Stop containers:
+Cấu hình Compose hiện tại sử dụng MySQL 8.4, database `sporthub_j2ee`, container backend tại cổng `8080`, MySQL lộ ra máy host tại cổng `3307`. Đây là database riêng của cấu hình Docker Compose, không phải URL mặc định của `dev` khi chạy trực tiếp tại máy.
 
 ```bash
 docker compose down
 ```
 
-Remove containers **and database volume**:
+**Cảnh báo:** `docker compose down -v` xóa cả volume dữ liệu MySQL, không sử dụng trên dữ liệu cần giữ.
 
-```bash
-docker compose down -v
-```
+### Truy cập API
 
-> `down -v` deletes the persisted Docker database volume. Use it only when a clean database is intentionally required.
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- Health: `http://localhost:8080/actuator/health`
 
----
+Đăng nhập qua API, lấy JWT và dùng **Authorize** trong Swagger cho các endpoint yêu cầu xác thực. `401` là chưa xác thực hợp lệ, `403` là đã xác thực nhưng thiếu quyền hoặc không sở hữu tài nguyên.
 
-## 10. Seed Data and Test Accounts
+## 5. Flyway Migration V1 → V2 → V3
 
-The project seeds basic roles, permissions, sports, and test users for local development/demo.
+Các file trong `sporthub-api/src/main/resources/db/migration/`:
 
-| Account | Email | Password | Main role |
-|---|---|---|---|
-| `user01` | `user01@example.com` | `12345678` | USER |
-| `owner01` | `owner01@example.com` | `12345678` | USER + OWNER |
-| `admin01` | `admin01@example.com` | `12345678` | USER + ADMIN |
+| Migration | Vai trò |
+|---|---|
+| `V1__init_sporthub_schema.sql` | Khởi tạo schema SportHub |
+| `V2__add_venue_unique_constraint.sql` | UNIQUE `(owner_id, name)` trên bảng `venues` |
+| `V3__prepaid_booking_lifecycle.sql` | Bổ sung trạng thái, thông tin hết hạn/hủy/hoàn tiền cho Booking và Payment, cập nhật một phần dữ liệu cũ, tạo index expiry |
 
-Seeded sports include examples such as:
+V3 có thay đổi dữ liệu: chuyển một số Booking `CONFIRMED` **chưa có Payment** về `PENDING`, bổ sung `expires_at` cho Booking đang chờ thanh toán. Vì thế nên sao lưu database, rà dữ liệu hiện hữu và thử migration trên **bản sao** trước khi nâng cấp database đang sử dụng.
 
-- Football
-- Badminton
-- Tennis
-- Basketball
-- Volleyball
-- Pickleball
+Không sửa các migration đã chạy, không xóa `flyway_schema_history` hoặc index để ép migration chạy lại. Nếu có thay đổi sau V3, tạo migration mới.
 
-> These credentials are development/demo accounts only. They must not be reused for a real production deployment.
+**Tình trạng xác minh:** source V3 đã có trên nhánh `feat/booking-payment-review` tại commit `9111a7e`. Việc Flyway V1–V3 chạy thành công trên MySQL thực tế cần được ghi nhận bằng log và bảng `flyway_schema_history`, kết quả CI H2 không thay thế minh chứng này.
 
----
+## 6. Kiểm thử
 
-## 11. Swagger / OpenAPI
-
-After starting the backend, open:
-
-```text
-http://localhost:8080/swagger-ui/index.html
-```
-
-OpenAPI JSON:
-
-```text
-http://localhost:8080/v3/api-docs
-```
-
-Swagger can be used to:
-
-1. Register or log in.
-2. Copy the JWT returned by the login API.
-3. Authorize protected endpoints.
-4. Test validation, authorization, pagination, and CRUD APIs.
-
----
-
-## 12. Testing
-
-The project uses **JUnit 5 + Mockito** for unit testing.
-
-Run all tests:
-
-### Linux / macOS / Git Bash
-
-```bash
-./mvnw test
-```
-
-### Windows
+Tại `sporthub-api/`:
 
 ```powershell
-.\mvnw.cmd test
+.\mvnw.cmd clean verify
 ```
 
-Examples of currently tested areas include:
+Kiểm tra riêng các bài test Booking:
 
-- Authentication service.
-- User service.
-- Sport service.
-- Azure Blob Storage service.
-- JWT authentication filter.
-- Request ID filter.
-- Service execution-time Aspect.
-
-Example targeted test:
-
-```bash
-./mvnw -Dtest=RequestIdFilterTest test
+```powershell
+.\mvnw.cmd "-Dtest=BookingWorkflowIntegrationTest,BookingRulesTest,BookingLifecycleRulesTest" test
 ```
 
-The testing style follows Arrange → Act → Assert and Mockito verification where appropriate.
+Các bài kiểm thử sử dụng JUnit 5, Mockito và Spring Test, gồm service, controller, repository, security và một số luồng tích hợp. Một số bài test sử dụng H2, không mặc nhiên là kết quả MySQL.
 
----
+**Mốc đã xác nhận:** GitHub Actions trên nhánh `feat/booking-payment-review`, commit [`9111a7e`](https://github.com/hoangpixel/SportHub-ModernBackend/commit/9111a7e443c247a4ddac7492ab3141b76d26be5e), run [`40685241548`](https://github.com/hoangpixel/SportHub-ModernBackend/actions/runs/40685241548) có **298 tests, 0 failures, 0 errors, 0 skipped**, build thành công. Đây là mốc trên nhánh Booking, **chưa phải mốc đã merge vào `develop`**.
 
-## 13. Observability
+Bài `BookingWorkflowIntegrationTest` cho phép chuyển sang MySQL bằng bộ biến `BOOKING_TEST_MYSQL_*` trên một database riêng. Xem cú pháp và cảnh báo dữ liệu tại [README Booking](docs/booking-payment-review/README.md).
 
-SportHub includes a lightweight observability layer.
+## 7. Tài khoản demo và bảo mật
 
-### Actuator health
+Trong profile không phải `prod`, `DatabaseSeeder` chạy quy trình seed dữ liệu phục vụ demo, bao gồm Role/Permission và các tài khoản mẫu. Tài khoản được ghi nhận trong source có tên `user01`, `owner01`, `admin01` và mật khẩu demo `12345678`. **Không sử dụng các thông tin demo trong production**.
 
-Public endpoint:
+Bảo mật dựa trên Spring Security + JWT, Role/Permission và kiểm tra quyền sở hữu tài nguyên. Một số endpoint tra cứu Sport, Venue, Court và Review mở công khai, còn các thao tác đặt sân/thanh toán/quản lý yêu cầu xác thực và authority tương ứng.
 
-```text
-GET /actuator/health
-```
+Azure Blob Storage phục vụ ảnh, file upload có giới hạn 5 MB, thông tin truy cập Azure phải được cung cấp ngoài source.
 
-Example response:
+## 8. CI và Git workflow
 
-```json
-{
-  "groups": ["liveness", "readiness"],
-  "status": "UP"
-}
-```
+Workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Pipeline chạy trên `push` và Pull Request phù hợp, thiết lập Java 21, thực thi Maven test, build và lưu artifact kết quả test.
 
-Detailed internal information is intentionally hidden from anonymous users.
+Quy trình nhóm: làm việc trên nhánh tính năng → commit → push → Pull Request vào `develop` → kiểm tra CI và review → merge. Nhánh `develop` được bảo vệ bằng quy tắc Pull Request, tránh push trực tiếp.
 
-### Metrics
+Sau khi README và code Booking được merge, cập nhật mốc SHA/CI mới nhất trong báo cáo dự án, không thay các mốc lịch sử 215 hoặc 217 tests bằng phép thay thế toàn cục.
 
-```text
-GET /actuator/metrics
-```
+## 9. Giới hạn và định hướng tiếp theo
 
-Metrics are protected. Anonymous requests receive `401`, normal users without the required role receive `403`, and authorized administrators can inspect available metrics.
+- Việc chạy CI xanh không chứng minh sẵn mọi luồng nghiệp vụ trên MySQL. Cần lưu log MySQL riêng cho Booking cạnh tranh, transaction rollback và Flyway V3.
+- `dev` vẫn đang dùng `ddl-auto=update`, trong khi `flyway` và `prod` dùng Flyway với `validate`.
+- Việc khởi tạo Role/Permission trên profile `prod` cần hoàn thiện trước triển khai thực tế.
+- Các thanh toán hiện tại là **mô phỏng trạng thái**, không có bằng chứng xử lý giao dịch hoặc hoàn tiền qua cổng thanh toán thật.
 
-Available metrics include examples such as:
+## 10. Tài liệu và sơ đồ
 
-- HTTP request metrics.
-- JVM memory and GC metrics.
-- CPU / process metrics.
-- HikariCP connection pool metrics.
-- JDBC metrics.
-- Spring Security metrics.
-- Spring Data repository invocation metrics.
+- [Booking, Payment và Review — API, quy tắc nghiệp vụ, test](docs/booking-payment-review/README.md)
+- [Sơ đồ và nguồn thiết kế database](docs/database/)
+- [GitHub Actions](https://github.com/hoangpixel/SportHub-ModernBackend/actions)
 
-### Request ID and MDC
-
-Each request receives an `X-Request-Id`.
-
-If the client does not provide one, the backend generates a UUID.
-
-```text
-Client
-  ↓
-RequestIdFilter
-  ↓
-X-Request-Id
-  ↓
-MDC
-  ↓
-Controller → Service → Repository
-  ↓
-Response contains the same X-Request-Id
-```
-
-Example log:
-
-```text
-INFO [aop-test-001] com.sporthub.aspect.ServiceLoggingAspect - Service execution - SportService.getAllSports took 24 ms
-```
-
-The Request ID allows logs from the same request to be correlated.
-
-### AOP execution timing
-
-Spring AOP measures execution time for public Service methods without mixing timing code into business logic.
-
-Example:
-
-```text
-Service execution - SportService.getAllSports took 24 ms
-```
-
-Sensitive method arguments are intentionally not logged.
-
----
-
-## 14. CI with GitHub Actions
-
-The repository uses GitHub Actions to automatically test and build the backend.
-
-The CI workflow runs on relevant pushes and pull requests and performs:
-
-```text
-Checkout source
-  ↓
-Set up Java 21
-  ↓
-Run Maven unit tests
-  ↓
-Build application package
-```
-
-The CI configuration is stored in:
-
-```text
-.github/workflows/ci.yml
-```
-
-Recommended branch triggers include:
-
-```text
-main
-develop
-feat/**
-fix/**
-test/**
-```
-
----
-
-## 15. Git Workflow
-
-The team does not work directly on `main` for feature development.
-
-Recommended flow:
-
-```text
-main
-  ↑
-develop
-  ↑
-feat/*, fix/*, test/*
-```
-
-Typical workflow:
-
-```bash
-git checkout develop
-git pull
-git checkout -b feat/example-feature
-
-# implement + test
-
-git add .
-git commit -m "feat: add example feature"
-git push -u origin feat/example-feature
-```
-
-Then:
-
-1. Open a Pull Request into `develop`.
-2. Wait for CI.
-3. Request teammate review.
-4. Resolve requested changes or conflicts.
-5. Merge only after review/checks pass.
-6. Merge stable `develop` into `main` through another Pull Request.
-
----
-
-## 16. Important API Behavior
-
-### `401 Unauthorized`
-
-Used when authentication cannot be established, for example:
-
-- Missing JWT on a protected endpoint.
-- Invalid/expired JWT.
-- Account becomes inactive and an old JWT is reused.
-- Invalid login credentials.
-
-### `403 Forbidden`
-
-Used when the caller is authenticated but does not have the required authority/role.
-
-### Validation
-
-Request bodies use `@Valid` while request parameters/path variables use method validation with `@Validated` and constraints such as:
-
-```text
-@Min
-@Max
-@Positive
-@Past
-@Pattern
-@Size
-```
-
----
-
-## 17. External Integration: Azure Blob Storage
-
-Azure Blob Storage is used for image/file storage instead of storing binary data directly in MySQL.
-
-Example flow:
-
-```text
-MultipartFile
-  ↓
-AzureBlobStorageService
-  ↓
-Azure Blob Storage
-  ↓
-Blob URL
-  ↓
-Database entity/profile
-```
-
-Azure credentials are supplied only through environment variables.
-
----
-
-## 18. Reproducibility Checklist
-
-Before considering a release/demo build ready:
-
-- [ ] Fresh clone the repository into a new directory.
-- [ ] Configure only documented environment variables.
-- [ ] Run `docker compose up --build` successfully.
-- [ ] Confirm seeded test accounts work.
-- [ ] Open Swagger UI.
-- [ ] Run the full Maven test suite.
-- [ ] Confirm GitHub Actions is green.
-- [ ] Confirm no `.env`, password, JWT secret, or Azure connection string is committed.
-- [ ] Confirm a teammate reviewed at least one Pull Request.
-
----
-
-## 19. AI Assistance Disclosure
-
-Generative AI tools were used as a development assistant for tasks such as:
-
-- explaining Spring Boot / Spring Security concepts;
-- suggesting test cases and debugging approaches;
-- reviewing code structure and edge cases;
-- helping draft documentation and README wording.
-
-AI suggestions were **not accepted blindly**. The team manually reviewed and adapted the suggestions, ran the code, verified API behavior, executed unit/regression tests, and kept responsibility for the final implementation and technical decisions.
-
----
-
-## 20. Development Notes
-
-This is an academic backend project and some production concerns can still be expanded later, for example:
-
-- dedicated configuration profiles for development/test/production;
-- schema migrations instead of relying on `ddl-auto=update`;
-- more integration/test-slice coverage;
-- stable paginated response DTOs instead of exposing the internal `PageImpl` JSON shape;
-- production HTTPS / reverse proxy configuration;
-- centralized production monitoring or log aggregation.
-
-These are intentionally treated as future improvements rather than adding unnecessary scope before the project deadline.
-
----
-
-## 21. Quick Start
-
-```bash
-git clone https://github.com/hoangpixel/SportHub-ModernBackend.git
-cd SportHub-ModernBackend/sporthub-api
-
-# Configure environment variables / .env as documented
-
-docker compose up --build
-```
-
-Then open:
-
-```text
-Swagger:  http://localhost:8080/swagger-ui/index.html
-Health:   http://localhost:8080/actuator/health
-```
-
-Login with a seeded demo account and use the returned JWT for protected APIs.
-
----
-
-## License
-
-This repository is currently maintained as an academic project. Add a formal license file if the project is later distributed publicly under a specific open-source license.
-
-## Module Venue Court của Huy
-
-[Báo cáo và API](docs/venue-court/README.md) · [Minh chứng kiểm thử](docs/venue-court/evidence.md)
+Đây là sản phẩm nghiên cứu và thực hành trong học phần, không mặc nhiên đạt các yêu cầu vận hành của một dịch vụ thương mại.

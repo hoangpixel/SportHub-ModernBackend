@@ -17,12 +17,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -33,14 +33,14 @@ public class ReviewService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ReviewResponse createReview(CreateReviewRequest request) {
         String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
-        Booking booking = bookingRepository.findById(request.getBookingId())
+        Booking booking = bookingRepository.findByIdForUpdate(request.getBookingId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy booking id = " + request.getBookingId()));
 
@@ -76,8 +76,9 @@ public class ReviewService {
 
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getReviewsByCourtId(Long courtId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return reviewRepository.findByCourtId(courtId, pageable).map(this::toResponse);
+        Pageable pageable = SearchPage.of(page, size, "createdAt", "desc", Set.of("createdAt"));
+        return reviewRepository.findByCourtIdAndStatus(courtId, ReviewStatus.VISIBLE, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
