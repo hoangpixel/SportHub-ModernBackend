@@ -120,6 +120,52 @@ public class VenueCourtSeeder {
                         LocalTime.of(21, 0));
             }
         }
+
+        // Du lieu demo mo rong: giu nguyen 2 venue va 3 court goc.
+        User secondOwner = userRepository.findByUsername("owner02").orElse(null);
+        if (secondOwner == null) {
+            return;
+        }
+        Venue badmintonClub = seedVenue(secondOwner, "Saigon Badminton Club",
+                "Câu lạc bộ cầu lông có máy lạnh", "88 Nguyen Thi Thap, Quan 7",
+                "Hồ Chí Minh", "Quận 7", "0908000101", "/images/venues/badminton-club.png");
+        Venue footballPark = seedVenue(owner, "Riverside Football Park",
+                "Cụm sân bóng đá cỏ nhân tạo", "12 Pham Van Dong, Thu Duc",
+                "Hồ Chí Minh", "Thủ Đức", "0908000102", "/images/venues/football-park.png");
+        Venue pickleballHub = seedVenue(secondOwner, "Thao Dien Pickleball Hub",
+                "Sân pickleball có mái che", "25 Quoc Huong, Thao Dien",
+                "Hồ Chí Minh", "Thủ Đức", "0908000103", "/images/venues/pickleball-hub.png");
+        Venue volleyballCenter = seedVenue(owner, "City Volleyball Center",
+                "Nhà thi đấu bóng chuyền", "50 Ba Thang Hai, Quan 10",
+                "Hồ Chí Minh", "Quận 10", "0908000104", "/images/venues/volleyball-center.png");
+
+        Sport basketball = sportRepository.findByNameIgnoreCase("Basketball").orElse(null);
+        Sport volleyball = sportRepository.findByNameIgnoreCase("Volleyball").orElse(null);
+        Sport pickleball = sportRepository.findByNameIgnoreCase("Pickleball").orElse(null);
+
+        addCourt(venue1, football, "Sân bóng đá 5 người - B", "Sân cỏ nhân tạo khu B", 280000, 6, 22);
+        addCourt(venue1, basketball, "Sân bóng rổ trong nhà", "Sân bóng rổ tiêu chuẩn", 220000, 7, 22);
+        addCourt(venue2, tennis, "Sân tennis B", "Sân tennis mặt cứng khu B", 170000, 6, 21);
+        addCourt(venue2, pickleball, "Sân pickleball A", "Sân pickleball ngoài trời", 120000, 6, 21);
+        addCourt(badmintonClub, badminton, "Sân cầu lông 2", "Sân cầu lông có máy lạnh", 90000, 6, 22);
+        addCourt(badmintonClub, badminton, "Sân cầu lông 3", "Sân cầu lông thi đấu", 95000, 6, 22);
+        addCourt(footballPark, football, "Sân bóng đá 5 người - C", "Sân cỏ nhân tạo ven sông", 320000, 6, 22);
+        addCourt(pickleballHub, pickleball, "Sân pickleball B", "Sân pickleball có mái che", 140000, 6, 22);
+        addCourt(volleyballCenter, volleyball, "Sân bóng chuyền 1", "Sân bóng chuyền trong nhà", 180000, 7, 22);
+    }
+
+    private void addCourt(Venue venue, Sport sport, String name, String description,
+                          int price, int openHour, int closeHour) {
+        if (venue == null || sport == null) {
+            return;
+        }
+        LocalTime open = LocalTime.of(openHour, 0);
+        LocalTime close = LocalTime.of(closeHour, 0);
+        Court court = seedCourt(venue, sport, name, description,
+                BigDecimal.valueOf(price), open, close);
+        if (court != null) {
+            seedWeekdaySchedules(court, open, close);
+        }
     }
 
     private Venue seedVenue(

@@ -15,6 +15,8 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final PermissionSeeder permissionSeeder;
     private final DevelopmentSeeder developmentSeeder;
     private final VenueCourtSeeder venueCourtSeeder;
+    private final BookingDemoSeeder bookingDemoSeeder;
+    private final TournamentDemoSeeder tournamentDemoSeeder;
 
     @Override
     @Transactional
@@ -22,7 +24,8 @@ public class DatabaseSeeder implements CommandLineRunner {
         roleSeeder.seed();
         permissionSeeder.seed();
         developmentSeeder.seed();
-
         venueCourtSeeder.seed();
+        bookingDemoSeeder.seed();
+        tournamentDemoSeeder.seed();
     }
 }

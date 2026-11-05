@@ -22,17 +22,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import com.sporthub.seeder.BookingDemoSeeder;
+import com.sporthub.seeder.TournamentDemoSeeder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 @Transactional
 class VenueCourtIntegrationTest {
-    // Keep database/security integration real while isolating the unrelated external storage account.
+
     @org.springframework.test.context.bean.override.mockito.MockitoBean
     com.azure.storage.blob.BlobServiceClient blobServiceClient;
     @org.springframework.test.context.bean.override.mockito.MockitoBean
     com.azure.storage.blob.BlobContainerClient blobContainerClient;
+    @MockitoBean
+    BookingDemoSeeder bookingDemoSeeder;
+
+    @MockitoBean
+    TournamentDemoSeeder tournamentDemoSeeder;
     @Autowired WebApplicationContext context;
     @Autowired EntityManager em;
     @Autowired VenueRepository venues;
