@@ -53,6 +53,15 @@ public class DevelopmentSeeder {
                 List.of(Roles.USER, Roles.ADMIN)
         );
 
+        // Tai khoan demo bo sung (mat khau chi dung trong moi truong !prod).
+        seedUser("user02", "user02@example.com", "12345678", "Nguyen Minh Anh", List.of(Roles.USER));
+        seedUser("user03", "user03@example.com", "12345678", "Tran Quoc Bao", List.of(Roles.USER));
+        seedUser("user04", "user04@example.com", "12345678", "Le Hoai Nam", List.of(Roles.USER));
+        seedUser("user05", "user05@example.com", "12345678", "Pham Ngoc Linh", List.of(Roles.USER));
+        seedUser("user06", "user06@example.com", "12345678", "Vo Thanh Dat", List.of(Roles.USER));
+        seedUser("user07", "user07@example.com", "12345678", "Bui Thanh Huy", List.of(Roles.USER));
+        seedUser("owner02", "owner02@example.com", "12345678", "SportHub Owner 2", List.of(Roles.USER, Roles.OWNER));
+
         seedSports();
     }
 
