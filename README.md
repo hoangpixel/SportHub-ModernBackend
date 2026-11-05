@@ -11,7 +11,7 @@ Backend REST API phục vụ đề tài **“Tìm hiểu và ứng dụng Spring
 Luồng xử lý tổng quát:
 
 ```text
-HTTP Request → Spring Security Filter → Controller → Service → Repository → MySQL
+HTTP Request -> Spring Security Filter -> Controller -> Service -> Repository -> MySQL
 ```
 
 | Nhóm chức năng | Nội dung |
@@ -32,7 +32,7 @@ Các thành phần dùng chung: Spring Profiles, Bean Validation, Global Excepti
 
 ## 2. Chuẩn bị môi trường
 
-**Chạy bằng Docker Compose (khuyến nghị cho demo):** Docker Desktop và Docker Compose; ứng dụng cùng MySQL được chạy trong container, không bắt buộc cài MySQL/JDK trên máy chỉ để chạy stack Docker.
+**Chạy bằng Docker Compose (khuyến nghị cho demo):** Docker Desktop và Docker Compose, ứng dụng cùng MySQL được chạy trong container, không bắt buộc cài MySQL/JDK trên máy chỉ để chạy stack Docker.
 
 **Chạy trực tiếp trên Windows:** JDK 21, MySQL 8+, PowerShell và Maven Wrapper (`mvnw.cmd`) có sẵn trong dự án.
 
@@ -96,8 +96,8 @@ Dự án dùng **`sporthub-api/docker-compose.yml`** làm cấu hình Docker Com
 
 | Service | Container | Cổng trên máy | Chức năng |
 |---|---|---|---|
-| `mysql` | `sporthub-mysql` | `3307` → `3306` | MySQL 8.4, database `sporthub` |
-| `backend` | `sporthub-api` | `8080` → `8080` | Spring Boot REST API |
+| `mysql` | `sporthub-mysql` | `3307` -> `3306` | MySQL 8.4, database `sporthub` |
+| `backend` | `sporthub-api` | `8080` -> `8080` | Spring Boot REST API |
 
 Bên trong Docker, backend kết nối MySQL qua địa chỉ `mysql:3306`, không phải `localhost:3306`. Cấu hình Compose truyền `DB_URL` trỏ đến database `sporthub` và sử dụng volume `mysql_data` để lưu dữ liệu MySQL.
 
@@ -127,7 +127,7 @@ docker compose down
 
 **Quan trọng khi đổi tên database:** Nếu đã khởi tạo volume MySQL bằng cấu hình cũ `sporthub_j2ee`, việc thay `MYSQL_DATABASE` trong YAML **không tự đổi tên hoặc tạo lại database trong volume có sẵn**. Hãy sao lưu dữ liệu, sau đó tạo database `sporthub` trên MySQL hiện có và cho Flyway chạy trên database phù hợp, hoặc khởi tạo volume mới **chỉ khi chắc chắn dữ liệu cũ không cần giữ**. Không xóa dữ liệu thật chỉ để làm sạch môi trường.
 
-**Cổng và biến môi trường:** MySQL mở ra máy host ở cổng `3307`, còn bên trong mạng Compose vẫn là cổng `3306`. Biến `DB_URL` trong Compose ghi đè giá trị `DB_URL` dành cho Maven trong `.env`. Giá trị `JWT_EXPIRATION` của `.env` không được Compose hiện tại truyền riêng vào backend; container dùng mặc định `86400000` ms từ `application.properties` trừ khi bổ sung biến đó vào Compose.
+**Cổng và biến môi trường:** MySQL mở ra máy host ở cổng `3307`, còn bên trong mạng Compose vẫn là cổng `3306`. Biến `DB_URL` trong Compose ghi đè giá trị `DB_URL` dành cho Maven trong `.env`. Giá trị `JWT_EXPIRATION` của `.env` không được Compose hiện tại truyền riêng vào backend, container dùng mặc định `86400000` ms từ `application.properties` trừ khi bổ sung biến đó vào Compose.
 
 ## 5. Chạy trực tiếp bằng Maven trên Windows
 
@@ -155,16 +155,16 @@ Không chạy migration thử nghiệm trên cơ sở dữ liệu quan trọng k
 - **OpenAPI JSON:** <http://localhost:8080/v3/api-docs>
 - **Actuator Health:** <http://localhost:8080/actuator/health>
 
-Đăng nhập qua API, lấy JWT và chọn **Authorize** trong Swagger đối với endpoint cần xác thực. Thông thường `401` là chưa xác thực hợp lệ; `403` là đã xác thực nhưng thiếu quyền hoặc không được phép truy cập tài nguyên.
+Đăng nhập qua API, lấy JWT và chọn **Authorize** trong Swagger đối với endpoint cần xác thực. Thông thường `401` là chưa xác thực hợp lệ, `403` là đã xác thực nhưng thiếu quyền hoặc không được phép truy cập tài nguyên.
 
 ## 6. Spring Profiles và Flyway Migration
 
 | Profile | Mục đích | Database và quản lý schema |
 |---|---|---|
-| `dev` (mặc định) | Phát triển/demo | MySQL; Flyway bật; Hibernate `ddl-auto=validate` |
-| `test` | Kiểm thử tự động | H2 in-memory; Hibernate `create-drop`; Flyway tắt |
-| `flyway` | Thực nghiệm migration riêng | MySQL thử nghiệm; Flyway bật; Hibernate `validate` |
-| `prod` | Cấu hình triển khai tham khảo | MySQL qua biến môi trường; Flyway bật; Hibernate `validate`; tắt `DatabaseSeeder` |
+| `dev` (mặc định) | Phát triển/demo | MySQL, Flyway bật, Hibernate `ddl-auto=validate` |
+| `test` | Kiểm thử tự động | H2 in-memory, Hibernate `create-drop`, Flyway tắt |
+| `flyway` | Thực nghiệm migration riêng | MySQL thử nghiệm, Flyway bật, Hibernate `validate` |
+| `prod` | Cấu hình triển khai tham khảo | MySQL qua biến môi trường, Flyway bật, Hibernate `validate`, tắt `DatabaseSeeder` |
 
 Cấu hình nằm tại `sporthub-api/src/main/resources/application*.properties` và `sporthub-api/src/test/resources/application-test.properties`.
 
@@ -183,7 +183,7 @@ V3 bao gồm thao tác cập nhật dữ liệu cũ, chẳng hạn điều chỉ
 ```sql
 SELECT installed_rank, version, description, success
 FROM flyway_schema_history
-ORDER BY installed_rank;
+ORDER BY installed_rank,
 ```
 
 ## 7. Kiểm thử và minh chứng CI
@@ -204,7 +204,7 @@ Các bài kiểm thử sử dụng JUnit 5, Mockito, Spring Test, MockMvc và c�
 
 ### Kiểm chứng `BookingWorkflowIntegrationTest` trên MySQL riêng
 
-Lớp `BookingWorkflowIntegrationTest` hỗ trợ chế độ MySQL thông qua `BOOKING_TEST_MYSQL_URL`, `BOOKING_TEST_MYSQL_USER`, `BOOKING_TEST_MYSQL_PASSWORD`. **Chỉ sử dụng database trống dành riêng cho kiểm thử**, tên bắt đầu bằng `sporthub_booking_test_` và host `localhost` hoặc `127.0.0.1`; không dùng database `sporthub` chạy demo.
+Lớp `BookingWorkflowIntegrationTest` hỗ trợ chế độ MySQL thông qua `BOOKING_TEST_MYSQL_URL`, `BOOKING_TEST_MYSQL_USER`, `BOOKING_TEST_MYSQL_PASSWORD`. **Chỉ sử dụng database trống dành riêng cho kiểm thử**, tên bắt đầu bằng `sporthub_booking_test_` và host `localhost` hoặc `127.0.0.1`, không dùng database `sporthub` chạy demo.
 
 Ví dụ với MySQL riêng đã có database `sporthub_booking_test_local` ở cổng `3306`:
 
@@ -215,13 +215,13 @@ $env:BOOKING_TEST_MYSQL_PASSWORD = $env:DB_PASSWORD
 .\mvnw.cmd "-Dtest=BookingWorkflowIntegrationTest" test
 ```
 
-Nếu dùng MySQL container được mở ra máy ở cổng `3307`, thay `3306` bằng `3307` trong URL thử nghiệm. Lưu ý `$env:DB_PASSWORD` phải có trong phiên PowerShell hiện tại; việc ứng dụng Java tự nạp `.env` không làm biến này tự xuất hiện trong PowerShell.
+Nếu dùng MySQL container được mở ra máy ở cổng `3307`, thay `3306` bằng `3307` trong URL thử nghiệm. Lưu ý `$env:DB_PASSWORD` phải có trong phiên PowerShell hiện tại, việc ứng dụng Java tự nạp `.env` không làm biến này tự xuất hiện trong PowerShell.
 
 ### Mốc kiểm chứng đã lưu
 
-Tại **ngày 29/10/2026**, nhánh `develop` đạt merge commit [`16d54cf`](https://github.com/hoangpixel/SportHub-ModernBackend/commit/16d54cf0095dabe92ce3cfd1b2a509fdc8abc9eb) sau [Pull Request #14](https://github.com/hoangpixel/SportHub-ModernBackend/pull/14). [GitHub Actions run `40841435961`](https://github.com/hoangpixel/SportHub-ModernBackend/actions/runs/40841435961) kết thúc thành công; báo cáo đồ án ghi nhận **298 tests, 0 failures, 0 errors, 0 skipped** và `BUILD SUCCESS`. Báo cáo cũng ghi nhận **23 bài kiểm thử Booking trên MySQL** được thực hiện riêng, bao gồm cạnh tranh đặt sân và Transaction Rollback.
+Tại **ngày 29/10/2026**, nhánh `develop` đạt merge commit [`16d54cf`](https://github.com/hoangpixel/SportHub-ModernBackend/commit/16d54cf0095dabe92ce3cfd1b2a509fdc8abc9eb) sau [Pull Request #14](https://github.com/hoangpixel/SportHub-ModernBackend/pull/14). [GitHub Actions run `40841435961`](https://github.com/hoangpixel/SportHub-ModernBackend/actions/runs/40841435961) kết thúc thành công, báo cáo đồ án ghi nhận **298 tests, 0 failures, 0 errors, 0 skipped** và `BUILD SUCCESS`. Báo cáo cũng ghi nhận **23 bài kiểm thử Booking trên MySQL** được thực hiện riêng, bao gồm cạnh tranh đặt sân và Transaction Rollback.
 
-Đây là **mốc lịch sử**, không tự động đại diện cho phiên bản mới sau khi thay đổi Docker/README. Sau mỗi PR mới, cần kiểm tra CI và cập nhật kết quả theo run tương ứng; không sửa mốc lịch sử 215/217/298 tests thành số liệu chưa chạy lại.
+Đây là **mốc lịch sử**, không tự động đại diện cho phiên bản mới sau khi thay đổi Docker/README. Sau mỗi PR mới, cần kiểm tra CI và cập nhật kết quả theo run tương ứng, không sửa mốc lịch sử 215/217/298 tests thành số liệu chưa chạy lại.
 
 ## 8. Tài khoản demo và bảo mật
 
@@ -235,7 +235,7 @@ Tại **ngày 29/10/2026**, nhánh `develop` đạt merge commit [`16d54cf`](htt
 
 **Chỉ sử dụng các tài khoản và mật khẩu này trong môi trường phát triển/demo.** Không sử dụng mặc định này cho production.
 
-- Xác thực dựa trên Spring Security và JWT; API phân quyền qua Role/Permission và kiểm tra sở hữu tài nguyên.
+- Xác thực dựa trên Spring Security và JWT, API phân quyền qua Role/Permission và kiểm tra sở hữu tài nguyên.
 - `JWT_SECRET` phải là chuỗi Base64 hợp lệ với khóa đủ độ dài.
 - Kích thước tệp upload được giới hạn 5 MB trong cấu hình ứng dụng.
 - Dịch vụ Azure Blob Storage yêu cầu thông tin kết nối hợp lệ và quyền truy cập phù hợp.
@@ -245,13 +245,13 @@ Tại **ngày 29/10/2026**, nhánh `develop` đạt merge commit [`16d54cf`](htt
 
 Workflow [`SportHub CI`](.github/workflows/ci.yml) chạy khi push lên các nhánh phù hợp (`main`, `develop`, `feat/**`, `fix/**`, `test/**`) và khi tạo Pull Request đến `develop` hoặc `main`.
 
-Pipeline hiện tại thực hiện: checkout source → thiết lập Java 21 → `./mvnw -B clean test` → `./mvnw -B package -DskipTests` → lưu artifact báo cáo test.
+Pipeline hiện tại thực hiện: checkout source -> thiết lập Java 21 -> `./mvnw -B clean test` -> `./mvnw -B package -DskipTests` -> lưu artifact báo cáo test.
 
 Quy trình đóng góp của nhóm:
 
 ```text
-Tạo/đồng bộ feature branch → sửa code → chạy test → commit → push
-→ tạo Pull Request vào develop → kiểm tra CI/review → merge
+Tạo/đồng bộ feature branch -> sửa code -> chạy test -> commit -> push
+-> tạo Pull Request vào develop -> kiểm tra CI/review -> merge
 ```
 
 Các thay đổi trên `develop` được tích hợp qua Pull Request theo quy tắc bảo vệ nhánh. Kết quả CI xanh cho thấy các bước pipeline được cấu hình đã thành công, **không đồng nghĩa** hệ thống đã được triển khai production hoặc kiểm chứng đầy đủ trên MySQL.
@@ -264,5 +264,3 @@ Các thay đổi trên `develop` được tích hợp qua Pull Request theo quy 
 - Profile `prod` trong repository là cấu hình tham khảo, **chưa phải cấu hình production hoàn chỉnh**.
 
 **Tài liệu:** [Sơ đồ database](docs/database/) · [Lịch sử Pull Request](https://github.com/hoangpixel/SportHub-ModernBackend/pulls) · [GitHub Actions](https://github.com/hoangpixel/SportHub-ModernBackend/actions).
-
-> Đây là dự án nghiên cứu và thực hành trong học phần; các chức năng và kết quả kiểm chứng được trình bày theo phạm vi thực nghiệm đã ghi nhận.
